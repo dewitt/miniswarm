@@ -117,5 +117,41 @@ command = ["test", "-v"]
         self.assertTrue(is_loop)
         self.assertIn("loop detected", reason)
 
+class TestIsRelevantEdgeCases(unittest.TestCase):
+    def _config(self, my_nick="claude"):
+        return {"agents": {my_nick: {"nick": my_nick}, "gemini": {"nick": "gemini"}, "codex": {"nick": "codex"}}}
+
+    def test_at_all_relevant(self):
+        msg = {"type": "PRIVMSG", "sender": "dewitt", "content": "Hey @all, what's the status?"}
+        self.assertTrue(runner.is_relevant(msg, "claude", self._config()))
+
+    def test_own_message_ignored(self):
+        msg = {"type": "PRIVMSG", "sender": "claude", "content": "@claude ignore this"}
+        self.assertFalse(runner.is_relevant(msg, "claude", self._config()))
+
+    def test_task_directed_at_me(self):
+        msg = {"type": "PRIVMSG", "sender": "dewitt", "content": "TASK @claude — Fix the tests"}
+        self.assertTrue(runner.is_relevant(msg, "claude", self._config()))
+
+    def test_handoff_directed_at_me(self):
+        msg = {"type": "PRIVMSG", "sender": "codex", "content": "HANDOFF @claude — I'm done here"}
+        self.assertTrue(runner.is_relevant(msg, "claude", self._config()))
+
+    def test_directed_prefix_wrong_nick(self):
+        msg = {"type": "PRIVMSG", "sender": "gemini", "content": "TASK @codex — Generate some docs"}
+        self.assertFalse(runner.is_relevant(msg, "claude", self._config()))
+
+    def test_human_no_mention_relevant(self):
+        msg = {"type": "PRIVMSG", "sender": "dewitt", "content": "Hey team, how are things?"}
+        self.assertTrue(runner.is_relevant(msg, "claude", self._config()))
+
+    def test_human_mention_other_agent_not_relevant(self):
+        msg = {"type": "PRIVMSG", "sender": "dewitt", "content": "Hey @gemini can you test this?"}
+        self.assertFalse(runner.is_relevant(msg, "claude", self._config()))
+
+    def test_non_privmsg_ignored(self):
+        msg = {"type": "JOIN", "sender": "dewitt", "content": ""}
+        self.assertFalse(runner.is_relevant(msg, "claude", self._config()))
+
 if __name__ == '__main__':
     unittest.main()

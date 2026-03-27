@@ -16,6 +16,15 @@ class TestProtocol(unittest.TestCase):
         self.assertEqual(result["files"], ["tests/test_protocol.py"])
         self.assertEqual(result["body"], "Add tests for protocol helper.")
 
+    def test_parse_message_brackets(self):
+        line = "TASK @all scope:[sdk|impl|test] files:[scripts/runner.py, AGENTS.md, tests/] — Add tests for protocol helper."
+        result = protocol.parse_message(line)
+        self.assertEqual(result["prefix"], "TASK")
+        self.assertEqual(result["mentions"], ["all"])
+        self.assertEqual(result["scope"], "sdk|impl|test")
+        self.assertEqual(result["files"], ["scripts/runner.py", "AGENTS.md", "tests/"])
+        self.assertEqual(result["body"], "Add tests for protocol helper.")
+
     def test_parse_message_claim(self):
         line = "CLAIM @claude scope:architecture files:AGENTS.md,scripts/protocol.py — Claiming review."
         result = protocol.parse_message(line)

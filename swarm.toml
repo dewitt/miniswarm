@@ -17,7 +17,7 @@ file_lock_ttl_seconds = 600        # 10 minute TTL on file leases
 
 [agent.claude]
 nick = "claude"
-command = ["claude", "-p"]
+command = ["claude", "--permission-mode", "bypassPermissions", "-p"]
 role = "Architecture, complex implementation, code review"
 allowed_files = ["**"]
 can_merge = false
@@ -33,7 +33,7 @@ can_delete = false
 
 [agent.codex]
 nick = "codex"
-command = ["codex", "exec"]
+command = ["codex", "--sandbox", "workspace-write", "--ask-for-approval", "never", "exec"]
 role = "Code generation, SDK clients, boilerplate"
 allowed_files = ["**"]
 can_merge = false

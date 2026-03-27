@@ -33,15 +33,17 @@ def parse_message(line: str) -> Dict[str, Any]:
     result["mentions"] = mentions
     
     # Extract scope
-    scope_match = re.search(r'scope:([^\s]+)', metadata_part)
+    scope_match = re.search(r'scope:\[?([^\s\]]+)\]?', metadata_part)
     if scope_match:
         result["scope"] = scope_match.group(1)
         
     # Extract files
-    files_match = re.search(r'files:([^\s]+)', metadata_part)
+    # Match files: followed by either [file1, file2] or file1,file2
+    files_match = re.search(r'files:(?:\[([^\]]+)\]|([^\s]+))', metadata_part)
     if files_match:
-        # Assuming comma-separated files without spaces
-        result["files"] = [f for f in files_match.group(1).split(",") if f]
+        files_str = files_match.group(1) if files_match.group(1) else files_match.group(2)
+        # Split by comma and strip spaces
+        result["files"] = [f.strip() for f in files_str.split(",") if f.strip()]
         
     return result
 
