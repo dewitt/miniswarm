@@ -1,0 +1,6 @@
+# Nix
+result
+result-*
+
+# Runtime (these live in /tmp, but just in case)
+*.fifo
