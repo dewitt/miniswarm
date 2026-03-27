@@ -19,6 +19,7 @@ The runner:
 """
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
@@ -274,70 +275,216 @@ class IRCConnection:
 # File Locking (TTL-based leases)
 # ---------------------------------------------------------------------------
 
-LOCK_DIR = Path("/tmp/swarm-locks")
+STATE_DIR = "state"
+STATE_SCHEMA_VERSION = 1
+CLAIMS_FILE = "claims.json"
+CLAIMS_LOCK_FILE = ".claims.lock"
+TASKS_FILE = "tasks.json"
+STATE_SUBDIRS = ("agents", "summaries")
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 
-def acquire_lock(filepath, owner, ttl_seconds=600):
-    """Acquire a TTL-based file lease. Returns True if acquired."""
-    LOCK_DIR.mkdir(parents=True, exist_ok=True)
-    lock_file = LOCK_DIR / hashlib.sha256(filepath.encode()).hexdigest()
+def _state_path(project_root=None):
+    root = Path(project_root) if project_root else Path.cwd()
+    return root / STATE_DIR
 
-    # Check existing lock
-    if lock_file.exists():
-        try:
-            lock_data = json.loads(lock_file.read_text())
-            expires = datetime.fromisoformat(lock_data["expires"])
-            if expires > datetime.now() and lock_data["owner"] != owner:
-                return False  # Locked by someone else
-        except (json.JSONDecodeError, KeyError):
-            pass  # Stale/corrupt lock, overwrite
 
-    lock_data = {
-        "path": filepath,
-        "owner": owner,
-        "acquired": datetime.now().isoformat(),
-        "expires": (datetime.now() + timedelta(seconds=ttl_seconds)).isoformat(),
+def _claims_path(project_root=None):
+    return _state_path(project_root) / CLAIMS_FILE
+
+
+def _claims_lock_path(project_root=None):
+    return _state_path(project_root) / CLAIMS_LOCK_FILE
+
+
+def _default_claims_state():
+    return {
+        "schema_version": STATE_SCHEMA_VERSION,
+        "updated_at": datetime.now().isoformat(),
+        "claims": [],
     }
-    lock_file.write_text(json.dumps(lock_data))
-    return True
 
 
-def release_lock(filepath, owner):
+def _default_tasks_state():
+    return {
+        "schema_version": STATE_SCHEMA_VERSION,
+        "updated_at": datetime.now().isoformat(),
+        "tasks": [],
+    }
+
+
+def bootstrap_state(project_root=None):
+    """Create a minimal state/ schema if missing."""
+    state_dir = _state_path(project_root)
+    state_dir.mkdir(parents=True, exist_ok=True)
+    for subdir in STATE_SUBDIRS:
+        (state_dir / subdir).mkdir(parents=True, exist_ok=True)
+
+    claims_path = _claims_path(project_root)
+    if not claims_path.exists():
+        _write_json_atomic(claims_path, _default_claims_state())
+
+    tasks_path = state_dir / TASKS_FILE
+    if not tasks_path.exists():
+        _write_json_atomic(tasks_path, _default_tasks_state())
+
+
+def _write_json_atomic(path, data):
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    tmp_path.write_text(json.dumps(data, indent=2) + "\n")
+    tmp_path.replace(path)
+
+
+@contextlib.contextmanager
+def _claims_lock(project_root=None):
+    """Cross-process lock for safe claims.json updates."""
+    bootstrap_state(project_root)
+    lock_path = _claims_lock_path(project_root)
+    with open(lock_path, "a+") as lock_fp:
+        if fcntl is not None:
+            fcntl.flock(lock_fp.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            if fcntl is not None:
+                fcntl.flock(lock_fp.fileno(), fcntl.LOCK_UN)
+
+
+def _parse_claim_expiry(raw_value):
+    if not raw_value:
+        return None
+    try:
+        return datetime.fromisoformat(raw_value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _load_claims_state(project_root=None):
+    claims_path = _claims_path(project_root)
+    try:
+        payload = json.loads(claims_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        payload = _default_claims_state()
+
+    claims = payload.get("claims")
+    if not isinstance(claims, list):
+        claims = []
+
+    normalized_claims = []
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        if all(k in claim for k in ("path", "owner", "acquired", "expires")):
+            normalized_claims.append(claim)
+
+    return {
+        "schema_version": payload.get("schema_version", STATE_SCHEMA_VERSION),
+        "updated_at": payload.get("updated_at"),
+        "claims": normalized_claims,
+    }
+
+
+def _persist_claims_state(project_root, claims_state):
+    claims_state["schema_version"] = STATE_SCHEMA_VERSION
+    claims_state["updated_at"] = datetime.now().isoformat()
+    _write_json_atomic(_claims_path(project_root), claims_state)
+
+
+def _prune_expired_claims(claims_state, now=None):
+    now = now or datetime.now()
+    active_claims = []
+    expired_count = 0
+
+    for claim in claims_state.get("claims", []):
+        expires = _parse_claim_expiry(claim.get("expires"))
+        if expires is None or expires <= now:
+            expired_count += 1
+            continue
+        active_claims.append(claim)
+
+    claims_state["claims"] = active_claims
+    return expired_count
+
+
+def expire_stale_locks(project_root=None):
+    """Prune expired claims and persist if anything changed."""
+    with _claims_lock(project_root):
+        claims_state = _load_claims_state(project_root)
+        expired = _prune_expired_claims(claims_state)
+        if expired:
+            _persist_claims_state(project_root, claims_state)
+        return expired
+
+
+def acquire_lock(filepath, owner, ttl_seconds=600, project_root=None):
+    """Acquire a TTL-based file lease. Returns True if acquired."""
+    with _claims_lock(project_root):
+        claims_state = _load_claims_state(project_root)
+        _prune_expired_claims(claims_state)
+
+        existing_claim = None
+        for claim in claims_state["claims"]:
+            if claim["path"] == filepath:
+                existing_claim = claim
+                break
+
+        if existing_claim and existing_claim["owner"] != owner:
+            return False
+
+        new_claim = {
+            "path": filepath,
+            "owner": owner,
+            "acquired": datetime.now().isoformat(),
+            "expires": (datetime.now() + timedelta(seconds=ttl_seconds)).isoformat(),
+        }
+        if existing_claim:
+            existing_claim.update(new_claim)
+        else:
+            claims_state["claims"].append(new_claim)
+        _persist_claims_state(project_root, claims_state)
+        return True
+
+
+def release_lock(filepath, owner, project_root=None):
     """Release a file lease."""
-    lock_file = LOCK_DIR / hashlib.sha256(filepath.encode()).hexdigest()
-    if lock_file.exists():
-        try:
-            lock_data = json.loads(lock_file.read_text())
-            if lock_data.get("owner") == owner:
-                lock_file.unlink()
-        except (json.JSONDecodeError, KeyError):
-            lock_file.unlink()
+    with _claims_lock(project_root):
+        claims_state = _load_claims_state(project_root)
+        _prune_expired_claims(claims_state)
+        before = len(claims_state["claims"])
+        claims_state["claims"] = [
+            claim for claim in claims_state["claims"]
+            if not (claim["path"] == filepath and claim["owner"] == owner)
+        ]
+        if len(claims_state["claims"]) != before:
+            _persist_claims_state(project_root, claims_state)
 
 
-def check_lock(filepath):
+def check_lock(filepath, project_root=None):
     """Check who holds a lock on a file. Returns owner or None."""
-    lock_file = LOCK_DIR / hashlib.sha256(filepath.encode()).hexdigest()
-    if lock_file.exists():
-        try:
-            lock_data = json.loads(lock_file.read_text())
-            expires = datetime.fromisoformat(lock_data["expires"])
-            if expires > datetime.now():
-                return lock_data.get("owner")
-        except (json.JSONDecodeError, KeyError):
-            pass
-    return None
+    with _claims_lock(project_root):
+        claims_state = _load_claims_state(project_root)
+        expired = _prune_expired_claims(claims_state)
+        if expired:
+            _persist_claims_state(project_root, claims_state)
+        for claim in claims_state["claims"]:
+            if claim["path"] == filepath:
+                return claim["owner"]
+        return None
 
 
-def release_all_locks(owner):
+def release_all_locks(owner, project_root=None):
     """Release all locks held by an owner."""
-    if LOCK_DIR.exists():
-        for lock_file in LOCK_DIR.iterdir():
-            try:
-                lock_data = json.loads(lock_file.read_text())
-                if lock_data.get("owner") == owner:
-                    lock_file.unlink()
-            except (json.JSONDecodeError, KeyError):
-                pass
+    with _claims_lock(project_root):
+        claims_state = _load_claims_state(project_root)
+        _prune_expired_claims(claims_state)
+        before = len(claims_state["claims"])
+        claims_state["claims"] = [claim for claim in claims_state["claims"] if claim["owner"] != owner]
+        if len(claims_state["claims"]) != before:
+            _persist_claims_state(project_root, claims_state)
 
 
 # ---------------------------------------------------------------------------
@@ -667,6 +814,12 @@ def run(agent_name, config):
     server = config["server"]
     project_root = str(Path.cwd())
 
+    # Ensure state/ exists for durable shared state and claims
+    bootstrap_state(project_root)
+    expired_claims = expire_stale_locks(project_root)
+    if expired_claims:
+        log(f"Expired {expired_claims} stale claim(s) during startup.")
+
     # Set up IRC
     irc = IRCConnection(server["host"], server["port"], nick, server["channel"])
     guardrails = Guardrails(config)
@@ -683,7 +836,7 @@ def run(agent_name, config):
             agent_process.terminate()
         try:
             irc.send_message(f"BYE — {nick} runner shutting down.")
-            release_all_locks(nick)
+            release_all_locks(nick, project_root)
         except Exception:
             pass
         sys.exit(0)
@@ -764,6 +917,10 @@ def run(agent_name, config):
             irc.send_message(f"STATUS — Processing message from {msg['sender']}...")
             guardrails.record_invocation()
 
+            expired_claims = expire_stale_locks(project_root)
+            if expired_claims:
+                log(f"Expired {expired_claims} stale claim(s) before invocation.")
+
             context = build_context(
                 agent_config,
                 list(irc.message_log),
@@ -798,7 +955,7 @@ def run(agent_name, config):
             last_heartbeat = now
 
     # Cleanup
-    release_all_locks(nick)
+    release_all_locks(nick, project_root)
     log("Runner stopped.")
 
 

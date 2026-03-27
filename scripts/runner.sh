@@ -13,7 +13,7 @@ AGENT="${1:?Usage: $0 <agent-name> (e.g. claude, gemini, codex)}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-mkdir -p /tmp/swarm-share /tmp/swarm-logs /tmp/swarm-locks
+mkdir -p /tmp/swarm-share /tmp/swarm-logs
 
 RESTART_DELAY=5
 MAX_RESTART_DELAY=60
