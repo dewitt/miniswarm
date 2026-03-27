@@ -196,16 +196,22 @@ class IRCConnection:
 
     def send_message(self, text):
         """Send a PRIVMSG to the channel. Splits long messages."""
-        # IRC max line is ~512 bytes; keep messages under 400 chars
+        # IRC protocol max is 512 bytes/line including prefix+CRLF.
+        # Local hostmask (e.g. nick!nick@127.0.0.1) + "PRIVMSG #swarm :" ≈ 50 bytes overhead.
+        MAX_CHARS = 450
         lines = text.split("\n")
         for line in lines:
             line = line.strip()
             if not line:
                 continue
-            # Split long lines
-            while len(line) > 400:
-                self._send(f"PRIVMSG {self.channel} :{line[:400]}")
-                line = line[400:]
+            # Split long lines at word boundaries
+            while len(line) > MAX_CHARS:
+                # Find last space within limit to avoid mid-word cuts
+                split_at = line.rfind(" ", 0, MAX_CHARS)
+                if split_at == -1:
+                    split_at = MAX_CHARS  # no space found, hard cut
+                self._send(f"PRIVMSG {self.channel} :{line[:split_at]}")
+                line = line[split_at:].lstrip()
                 time.sleep(0.3)
             self._send(f"PRIVMSG {self.channel} :{line}")
             time.sleep(0.3)
