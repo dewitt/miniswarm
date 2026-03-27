@@ -534,6 +534,7 @@ def invoke_agent(agent_config, context, project_root, timeout=300):
             text=True,
             timeout=timeout,
             cwd=project_root,
+            stdin=subprocess.DEVNULL,
         )
         output = result.stdout.strip()
         if not output and result.stderr:
