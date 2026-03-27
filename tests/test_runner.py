@@ -141,6 +141,16 @@ command = ["test", "-v"]
         self.assertTrue(is_loop)
         self.assertIn("loop detected", reason)
 
+    def test_context_drift_resilience(self):
+        agent_config = {"nick": "gemini", "role": "Tester"}
+        trigger = {"type": "PRIVMSG", "sender": "dewitt", "content": "fix this", "raw": "1"}
+        recent = [{"type": "PRIVMSG", "sender": "user", "content": f"msg {i}", "raw": str(i)} for i in range(20)]
+        context = runner.build_context(agent_config, recent, trigger, ".")
+        self.assertIn("msg 19", context)
+        self.assertNotIn("msg 0", context)
+        self.assertNotIn("msg 4", context)
+        self.assertIn("msg 5", context)
+
 class TestIsRelevantEdgeCases(unittest.TestCase):
     def _config(self, my_nick="claude"):
         return {"agents": {my_nick: {"nick": my_nick}, "gemini": {"nick": "gemini"}, "codex": {"nick": "codex"}}}
