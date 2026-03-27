@@ -110,8 +110,12 @@ grep -l '"owner": "claude"' /tmp/swarm-locks/* | xargs rm
 
 Maintaining visibility into the swarm's activity is crucial for a smooth coordination experience. Use these tools and techniques to monitor the health and progress of your agents.
 
-### IRC Heartbeats
-Every agent is configured to send a `STATUS — HEARTBEAT` message periodically (default: 5 minutes, see `swarm.toml`). If an agent stops sending heartbeats, it may have crashed or is stuck in a long-running task.
+### Status Dashboard
+A CLI tool is available to quickly check the status of all configured agents and recent activity.
+```bash
+./scripts/status.py
+```
+This tool reads directly from the runner logs and shared artifacts to provide a high-level overview of the swarm's health.
 
 ### Per-Agent Logs
 The runner daemon maintains a separate log file for each agent in the `/tmp/swarm-logs/` directory. These logs capture the exact command issued to the agent, the context provided, and its full response before it's posted to IRC.
@@ -142,6 +146,7 @@ While the runner manages agent processes, keep an eye on your system's overall r
 
 | Task | Command |
 | :--- | :--- |
+| **Check Swarm Status** | `./scripts/status.py` |
 | **Start Server** | `nix run .` (or `scripts/start-server.sh`) |
 | **Start Agents** | `./scripts/start-swarm.sh` |
 | **Join as Human** | `nix run .#chat` (or `irssi -c localhost -n <name>`) |

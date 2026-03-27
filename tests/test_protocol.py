@@ -41,5 +41,44 @@ class TestProtocol(unittest.TestCase):
         formatted = protocol.format_task(scope, files, body)
         self.assertEqual(formatted, "TASK @all scope:impl files:scripts/protocol.py,scripts/runner.py — Implement helper.")
 
+    def test_parse_message_no_body(self):
+        line = "STATUS @all scope:test files:tests/test_protocol.py"
+        result = protocol.parse_message(line)
+        self.assertEqual(result["prefix"], "STATUS")
+        self.assertEqual(result["body"], "")
+
+    def test_parse_message_empty_body_with_separator(self):
+        line = "DONE @all — "
+        result = protocol.parse_message(line)
+        self.assertEqual(result["prefix"], "DONE")
+        self.assertEqual(result["body"], "")
+
+    def test_parse_message_invalid_prefix(self):
+        line = "task @all — lowercase"
+        result = protocol.parse_message(line)
+        self.assertEqual(result["prefix"], "")
+
+    def test_parse_message_multiple_dashes(self):
+        line = "TASK @all — body part 1 — body part 2"
+        result = protocol.parse_message(line)
+        self.assertEqual(result["prefix"], "TASK")
+        self.assertEqual(result["body"], "body part 1 — body part 2")
+
+    def test_parse_message_mentions_only(self):
+        line = "QUESTION @dewitt @claude — Should we continue?"
+        result = protocol.parse_message(line)
+        self.assertEqual(result["prefix"], "QUESTION")
+        self.assertEqual(result["mentions"], ["dewitt", "claude"])
+        self.assertEqual(result["body"], "Should we continue?")
+
+    def test_parse_message_no_metadata(self):
+        line = "HELLO — Joining swarm"
+        result = protocol.parse_message(line)
+        self.assertEqual(result["prefix"], "HELLO")
+        self.assertEqual(result["mentions"], [])
+        self.assertEqual(result["scope"], "")
+        self.assertEqual(result["files"], [])
+        self.assertEqual(result["body"], "Joining swarm")
+
 if __name__ == '__main__':
     unittest.main()
