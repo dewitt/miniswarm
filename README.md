@@ -52,7 +52,7 @@ To start a single agent in the foreground (useful for debugging):
 ./scripts/runner.sh claude
 ```
 
-To install an agent as a persistent background service (survives terminal close and reboots):
+To install an agent as a persistent background service on macOS (survives terminal close and reboots):
 
 ```bash
 ./scripts/install-service.sh claude /path/to/miniswarm
