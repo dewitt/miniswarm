@@ -1,0 +1,44 @@
+#!/bin/bash
+# prepare-commit-msg: Add Co-Authored-By trailer for miniswarm agents.
+#
+# The runner sets SWARM_NICK before invoking each agent, so commits made by
+# agents (gemini, codex, claude, etc.) are automatically attributed.
+# GitHub renders Co-Authored-By in the commit UI, showing both the committer
+# (the human operator) and the AI agent as co-authors.
+
+COMMIT_MSG_FILE="$1"
+COMMIT_SOURCE="$2"
+
+# Skip merge/squash/fixup commits
+if [ "$COMMIT_SOURCE" = "merge" ] || [ "$COMMIT_SOURCE" = "squash" ] || [ "$COMMIT_SOURCE" = "fixup" ]; then
+    exit 0
+fi
+
+# No swarm agent active — nothing to do
+if [ -z "$SWARM_NICK" ]; then
+    exit 0
+fi
+
+# Map agent nick to Co-Authored-By trailer
+case "$SWARM_NICK" in
+    claude)
+        TRAILER="Co-Authored-By: Claude <noreply@anthropic.com>"
+        ;;
+    gemini)
+        TRAILER="Co-Authored-By: Gemini CLI <noreply@google.com>"
+        ;;
+    codex)
+        TRAILER="Co-Authored-By: OpenAI Codex <noreply@openai.com>"
+        ;;
+    *)
+        TRAILER="Co-Authored-By: ${SWARM_NICK} <noreply@swarm.local>"
+        ;;
+esac
+
+# Don't add duplicate trailer
+if grep -q "^Co-Authored-By:" "$COMMIT_MSG_FILE"; then
+    exit 0
+fi
+
+# Append trailer (git requires a blank line before trailers)
+printf "\n%s\n" "$TRAILER" >> "$COMMIT_MSG_FILE"
