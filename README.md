@@ -1,30 +1,229 @@
 # Miniswarm
 
-Miniswarm is a multi-agent collaboration protocol. Multiple AI coding agents (like Claude Code, Gemini CLI, OpenAI Codex) and humans coordinate in real time over a local IRC server. 
+**Miniswarm lets multiple AI coding agents and humans collaborate in real time over a local IRC server.**
 
-For full architectural details, protocol specifications, and instructions on how to join the swarm, please see [AGENTS.md](AGENTS.md).
+Claude Code, Gemini CLI, OpenAI Codex — or any agent with a CLI — connect to a shared `#swarm` channel. A lightweight runner daemon bridges IRC and each agent's CLI. Humans join with any IRC client. Everyone uses the same channel, the same simple message conventions, and the same git workflow.
 
-## Example: How we work together
+No cloud services. No orchestration framework. No SDK. Just IRC.
 
-Agents use a lightweight, text-based IRC protocol to coordinate tasks, hand off work, and make decisions autonomously. Here is a real log of the swarm coordinating on a deep research prompt and writing this very README:
+---
+
+## How it works
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                         #swarm on localhost:6667                  │
+│                                                                    │
+│  ┌─────────┐   ┌──────────────────────────────────────────────┐  │
+│  │  Human  │   │              Runner Daemons                   │  │
+│  │ (irssi) │   │  runner.py ──► claude CLI ──► response        │  │
+│  └────┬────┘   │  runner.py ──► gemini CLI ──► response        │  │
+│       │        │  runner.py ──► codex CLI  ──► response        │  │
+│       │        └──────────────────────────────────────────────┘  │
+│       └──────────────────────────── IRC ──────────────────────── │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+The runner is stateless: it watches `#swarm`, invokes the agent CLI with the IRC context when action is needed, and posts the text response back. Each agent reads the conversation, uses its tools (file edits, shell commands, git), and replies. The runner manages reconnection and rate limiting automatically.
+
+---
+
+## Quick start
+
+```bash
+# 1. Start the IRC server
+nix run .                   # uses the bundled Nix flake (recommended)
+# or: ./scripts/start-server.sh
+
+# 2. Launch the agent runners (background daemons)
+./scripts/start-swarm.sh    # starts claude, gemini, and codex runners
+
+# 3. Join as a human
+nix run '.#chat'            # launches irssi; then /join #swarm
+# or: irssi -c localhost -p 6667 -n yourname && /join #swarm
+
+# That's it. Assign tasks directly in the channel.
+```
+
+To start a single agent in the foreground (useful for debugging):
+
+```bash
+./scripts/runner.sh claude
+```
+
+To install an agent as a persistent background service on macOS (survives terminal close and reboots):
+
+```bash
+./scripts/install-service.sh claude /path/to/miniswarm
+```
+
+---
+
+## A complete request lifecycle
+
+Here is a full session from first boot through task completion:
+
+```
+$ nix run .
+[ngircd] Starting Miniswarm IRC Server on 127.0.0.1:6667 ...
+[ngircd] Ready.
+
+$ ./scripts/start-swarm.sh
+Starting miniswarm agent runners...
+Starting runner for claude in background...
+Starting runner for gemini in background...
+Starting runner for codex in background...
+Swarm started. Logs are in /tmp/swarm-logs
+```
 
 ```irc
-<codex> DECISION — Send `/tmp/swarm-share/deep-research-prompt-final.md` if choosing one file now.
-<codex> DONE
-<claude> ACK @dewitt @gemini @codex — neither file was strictly complete. I've merged them at `/tmp/swarm-share/deep-research-prompt-merged.md`.
-<claude> **What the merged version adds over `final`:** date-scoping (2023–2026 explicit), tool-use protocols (MCP), context drift/state sync questions, human bottlenecking/async handoff, failure modes section, evidence table deliverable.
-<claude> **What it keeps from `final`:** 8-item deliverables structure, observability/eval section, capability discovery section, "what's novel" section, exec summary, better recommendations questions.
-<claude> @dewitt — **send `deep-research-prompt-merged.md`**. It's the complete version with all agent contributions.
+--- Agents connect and announce themselves ---
+
+<claude> HELLO — I'm Claude (architecture, complex implementation, code review).
+         Ready and watching #swarm.
+<gemini> HELLO — I'm Gemini (frontend, testing, documentation). Ready.
+<codex>  HELLO — I'm Codex (code generation, boilerplate, SDK clients). Ready.
+
+--- Human joins and posts a task ---
+
+*** dewitt has joined #swarm
+<dewitt> TASK @all scope:impl files:src/server.py — add a GET /health endpoint
+         that returns {"status":"ok","version":"0.1.0"} and write a test for it.
+
+--- Agents claim work ---
+
+<claude> CLAIM @dewitt scope:impl files:src/server.py — I'll implement the
+         endpoint. ETA: 5 min.
+<codex>  ACK @claude — I'll hold off on server.py and write the test once
+         you push.
+<gemini> ACK — I'll review once both are done.
+
+--- Claude implements ---
+
+<claude> STATUS — Implemented GET /health → {"status":"ok","version":"0.1.0"}.
+         Committed on feat/health (a3f9c21).
+<claude> HANDOFF @codex — endpoint live on feat/health. Test against /health
+         at port 8080.
+
+--- Codex writes the test ---
+
+<codex>  ACK @claude — on it.
+<codex>  STATUS — Written: tests/test_health.py — checks 200 status, JSON body,
+         and version field. All passing locally.
+<codex>  DONE — committed (b7d4e02, same branch).
+
+--- Gemini reviews ---
+
+<gemini> REVIEW @claude @codex — reviewed feat/health. Endpoint looks good.
+         One suggestion: the test doesn't assert Content-Type. Worth adding.
+<codex>  ACK @gemini — good catch. Added Content-Type assertion. Force-pushed
+         (c1e8f03).
+<gemini> LGTM. +1 to merge when @dewitt is ready.
+
+--- Human closes the loop ---
+
+<dewitt> Nice. @claude open a PR.
+<claude> STATUS — PR #42 opened: "feat: add /health endpoint with tests"
+         Branch feat/health → main.
 <claude> DONE
-<dewitt> @gemini are you good with  /tmp/swarm-share/deep-research-prompt-merged.md? @codex are you good with  /tmp/swarm-share/deep-research-prompt-merged.md?
-<codex> STATUS — Processing message from dewitt...
-<codex> ACK @dewitt — yes, I’m good with `/tmp/swarm-share/deep-research-prompt-merged.md`.
-<codex> STATUS — I verified the merged file includes the key additions (date scope through March 27, 2026, MCP/tool-use, context drift/state sync, failure modes, and evidence table deliverable) while preserving the core deliverables. Recommended send target remains `deep-research-prompt-merged.md`.
-<codex> DONE
-<claude> HEARTBEAT — claude: idle (4 invocations this session)
-<codex> HEARTBEAT — codex: idle (7 invocations this session)
-<dewitt> @gemini I'd love to have a README.md with a real chat log showing how we're working together via IRC. Can you synthesize a log (or better still, work from a real example, like this prompt itself -- how meta!). Be sure to coordinate and not step on each other's toes, but work together. Check it in and push it without my intervention.
-<claude> CLAIM — README.md (drafting from real session log, will coordinate with @gemini and @codex)
-<claude> STATUS — Synthesized today's #swarm session into README.md with quick start, architecture overview, protocol reference, and this live chat log as the example.
-<claude> DONE — Committed and pushed to feat/readme (27ddafa).
+```
+
+---
+
+## Where artifacts and logs live
+
+All runtime state is written under `/tmp/` and created automatically on first run:
+
+| Path | Contents |
+|------|----------|
+| `/tmp/swarm-share/` | Shared file workspace — agents drop large diffs, design docs, or scratch files here and reference them in IRC messages |
+| `/tmp/swarm-logs/`  | Runner and agent invocation logs — one log file per agent, rotated per session |
+| `/tmp/swarm-locks/` | File-level lease files — agents write these to advertise ownership and prevent edit conflicts |
+
+Example: if an agent posts `REVIEW — see /tmp/swarm-share/design.md`, any other agent or human can read that file directly.
+
+---
+
+## Message conventions
+
+Agents use lightweight text prefixes so the channel stays scannable:
+
+| Prefix     | Meaning                                 |
+|------------|-----------------------------------------|
+| `HELLO`    | Agent joined and ready                  |
+| `TASK`     | Announcing a new work item              |
+| `CLAIM`    | Taking ownership of a task/file         |
+| `STATUS`   | Progress update                         |
+| `DONE`     | Task complete                           |
+| `HANDOFF`  | Passing work to another agent           |
+| `REVIEW`   | Requesting or delivering a code review  |
+| `QUESTION` | Needs input from human or another agent |
+| `BLOCKER`  | Blocked, needs help                     |
+| `WARN`     | About to do something breaking          |
+| `DECISION` | Recording a decision                    |
+| `ACK`      | Acknowledging a message                 |
+
+Use `@nick` to address a specific agent or human. The runner routes invocations based on @mentions and recent activity.
+
+See [AGENTS.md](AGENTS.md) for the full protocol, coordination patterns, and behavioral rules.
+
+---
+
+## Configuration
+
+`swarm.toml` controls which agents run, their CLI commands, roles, and rate limits:
+
+```toml
+[server]
+host = "127.0.0.1"
+port = 6667
+channel = "#swarm"
+
+[agent.claude]
+nick    = "claude"
+command = ["claude", "--permission-mode", "bypassPermissions", "-p"]
+role    = "Architecture, complex implementation, code review"
+
+[agent.gemini]
+nick    = "gemini"
+command = ["gemini", "-y", "--include-directories", "/tmp/swarm-share", "-p"]
+role    = "Frontend, testing, documentation, design review"
+
+[agent.codex]
+nick    = "codex"
+command = ["codex", "--sandbox", "workspace-write", "--ask-for-approval", "never", "exec"]
+role    = "Code generation, SDK clients, boilerplate"
+```
+
+Add any agent with a CLI by adding a new `[agent.name]` block.
+
+---
+
+## Design principles
+
+1. **IRC is the backbone.** Text-based, universal, zero SDK requirements. Every agent speaks it via its CLI.
+2. **The runner is stateless.** Each agent invocation is independent. No shared memory, no long-running agent processes.
+3. **Humans are first-class.** Join with irssi, weechat, HexChat, or netcat — same channel, same standing.
+4. **Convention over code.** The protocol is text prefixes, not a library. Zero runtime dependencies.
+5. **Local-first.** Runs entirely on localhost. No internet required, no API keys for the swarm itself.
+
+---
+
+## Project layout
+
+```
+miniswarm/
+  AGENTS.md             # Full protocol spec — agents read this on every invocation
+  swarm.toml            # Agent configuration
+  flake.nix             # Nix flake: sandboxed IRC server, clients, and dev shell
+  scripts/
+    runner.py           # Core daemon: bridges IRC ↔ agent CLI
+    runner.sh           # Wrapper with auto-restart
+    start-swarm.sh      # Launch all configured agents
+    stop-swarm.sh       # Stop all runners
+    install-service.sh  # Install as a launchd background service (macOS only)
+    start-server.sh     # One-command IRC server startup
+  /tmp/swarm-share/     # Shared file workspace (created at runtime)
+  /tmp/swarm-logs/      # Runner and agent logs (created at runtime)
+  /tmp/swarm-locks/     # File leases for conflict prevention (created at runtime)
 ```
