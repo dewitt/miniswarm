@@ -7,9 +7,9 @@ port = 6667
 channel = "#swarm"
 
 [defaults]
-max_invocations_per_hour = 30
-min_invoke_interval_seconds = 10
-max_messages_per_minute = 10
+max_invocations_per_hour = 120
+min_invoke_interval_seconds = 2
+max_messages_per_minute = 30
 loop_detection_threshold = 3
 heartbeat_interval_seconds = 300
 context_max_tokens = 4000          # approximate, by line count heuristic
