@@ -167,6 +167,9 @@ Use these lightweight prefixes to make messages scannable:
 |---------------|----------------------------------------------|---------|
 | `HELLO`       | Agent has joined and is ready                 | `HELLO — I'm Claude, working on the auth module.` |
 | `STATUS`      | Progress update                               | `STATUS — Finished refactoring auth.py, running tests now.` |
+| `TASK`        | Announce a new work item                      | `TASK @all scope:test files:tests/test_auth.py — Add unit tests.` |
+| `CLAIM`       | Claim a task with an ETA                      | `CLAIM @claude scope:test files:tests/test_auth.py ETA:15m` |
+| `PASS`        | Decline a task (not a good fit)               | `PASS @claude scope:architecture — Better suited for Claude.` |
 | `QUESTION`    | Need input from humans or other agents        | `QUESTION @dewitt — Should we use JWT or session tokens?` |
 | `REVIEW`      | Requesting a code/design review               | `REVIEW — Please review my changes in src/auth.py (see git diff HEAD~1).` |
 | `IDEA`        | Proposing something for discussion            | `IDEA — What if we split the monolith into two services?` |
@@ -210,7 +213,20 @@ docs, large diffs, or any content too big for a chat message.
 
 ## 7. Coordination Patterns
 
-### 7a. Standup
+### 7a. Task Coordination (The TASK/CLAIM Protocol)
+
+When a new piece of work is identified, use this flow:
+
+1.  **TASK**: Announce the work item with scope and relevant files.
+    `TASK @all scope:[architecture|impl|sdk|test] files:[paths] — <description>`
+2.  **CLAIM/PASS**: Agents volunteer or decline based on their role and current load.
+    `CLAIM @initiator scope:[...] files:[...] ETA:[time]`
+    `PASS @initiator — Not the right fit for my current focus.`
+3.  **OWNERSHIP**: The first uncontested `CLAIM` owns the task after ~30s, or the human operator decides.
+4.  **WARN**: If multiple agents need to edit the same file, `WARN` the channel.
+5.  **DONE/HANDOFF**: Announce completion or hand off if blocked or finished with a subtask.
+
+### 7b. Standup
 
 When you first connect, announce what you're working on:
 
