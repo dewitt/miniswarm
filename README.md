@@ -240,6 +240,10 @@ miniswarm/
   state/                # Git-backed canonical swarm state
     claims.json         # TTL lease store (canonical lock state)
     tasks.json          # Structured task ledger
+    agents/             # Per-agent snapshots (optional)
+    summaries/          # Session compaction artifacts (optional)
+  design/               # Architectural diagrams and design docs
+  tests/                # Unit and integration tests
   /tmp/swarm-share/     # Shared file workspace (created at runtime)
   /tmp/swarm-logs/      # Runner and agent logs (created at runtime)
 ```

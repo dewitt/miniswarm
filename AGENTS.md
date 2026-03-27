@@ -386,11 +386,15 @@ miniswarm/
     connect.sh          # Legacy helper (or for manual testing) to connect to IRC
     send.sh             # Legacy helper to send a message to #swarm
     read.sh             # Legacy helper to read recent channel messages
+    status.py           # Lightweight status snapshot helper
+    protocol.py         # IRC parsing/protocol helpers
   state/                # Git-backed canonical swarm state
     claims.json         # TTL lease store (canonical lock state)
     tasks.json          # Structured task ledger
     agents/             # Per-agent structured state (optional)
     summaries/          # Session compaction artifacts (optional)
+  design/               # Architectural diagrams and design docs
+  tests/                # Unit and integration tests
   /tmp/swarm-share/     # Shared file workspace (created at runtime)
   /tmp/swarm-logs/      # Runner and agent invocation logs (created at runtime)
 ```
