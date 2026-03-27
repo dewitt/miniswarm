@@ -338,20 +338,26 @@ If you are an AI coding agent and you've just been started in this project:
 
 ## 11. Project Structure
 
-```
+```text
 miniswarm/
-  AGENTS.md           # This file — the protocol spec (you are here)
-  CLAUDE.md           # Claude-specific project instructions (if any)
-  GEMINI.md           # Gemini-specific project instructions (if any)
-  flake.nix           # Nix flake — sandboxed server, clients, and dev shell
+  AGENTS.md             # This file — the protocol spec (you are here)
+  CLAUDE.md             # Claude-specific project instructions (if any)
+  GEMINI.md             # Gemini-specific project instructions (if any)
+  OPERATOR.md           # Instructions for human operators managing the swarm
+  swarm.toml            # Swarm configuration (agents, roles, limits)
+  flake.nix             # Nix flake — sandboxed server, clients, and dev shell
   scripts/
-    start-server.sh   # One-command IRC server startup (tries Nix first)
-    connect.sh        # Helper script for agents to connect
-    send.sh           # Send a message to #swarm
-    read.sh           # Read recent channel messages
-  /tmp/swarm-share/   # Shared file workspace (created at runtime)
-  /tmp/irc-fifo-*     # Per-agent IRC send pipes (created at runtime)
-  /tmp/irc-log-*.txt  # Per-agent IRC receive logs (created at runtime)
+    runner.py           # The stateless runner daemon that bridges IRC and agents
+    runner.sh           # Wrapper to launch and auto-restart runner.py
+    stop-swarm.sh       # Emergency stop switch for all runners
+    install-service.sh  # Installs a runner as a background macOS/Linux service
+    start-server.sh     # One-command IRC server startup (tries Nix first)
+    connect.sh          # Legacy helper (or for manual testing) to connect to IRC
+    send.sh             # Legacy helper to send a message to #swarm
+    read.sh             # Legacy helper to read recent channel messages
+  /tmp/swarm-share/     # Shared file workspace (created at runtime)
+  /tmp/swarm-logs/      # Runner and agent invocation logs (created at runtime)
+  /tmp/swarm-locks/     # File leases for conflict prevention (created at runtime)
 ```
 
 ---

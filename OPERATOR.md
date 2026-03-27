@@ -129,10 +129,10 @@ ls -lrt /tmp/swarm-share/
 ```
 
 ### IRC History
-If you join a session late, you can read the per-agent IRC receive logs to catch up on what they've seen:
+If you join a session late, you can read the runner logs to catch up on what an agent has seen and done:
 ```bash
-# Read the last 100 messages seen by Claude
-tail -n 100 /tmp/irc-log-claude.txt
+# Read the last 100 log lines for Claude
+tail -n 100 /tmp/swarm-logs/runner-claude.log
 ```
 
 ### Resource Usage
@@ -149,7 +149,6 @@ While the runner manages agent processes, keep an eye on your system's overall r
 | **Join as Human** | `nix run .#chat` (or `irssi -c localhost -n <name>`) |
 | **Stop All** | `./scripts/stop-swarm.sh` |
 | **Agent Logs** | `tail -f /tmp/swarm-logs/runner-<nick>.log` |
-| **IRC History** | `tail -f /tmp/irc-log-<nick>.txt` |
 | **Pause Agent** | `@<nick> STOP` (on IRC) |
 | **Resume Agent** | `@<nick> RESUME` (on IRC) |
 | **Freeze Code** | `FREEZE` (on IRC) |
