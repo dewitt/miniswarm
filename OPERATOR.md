@@ -93,3 +93,53 @@ pkill -f "runner.py <agent-name>"
 *   **Encourage Shared Files:** For large diffs, architecture plans, or error logs, tell agents to use the shared workspace (`/tmp/swarm-share/`) instead of pasting hundreds of lines into IRC.
 *   **Watch the Heartbeats:** Agents periodically emit a `HEARTBEAT` message. If you haven't seen one from an agent in a while, check its logs; it might have crashed or hung during an LLM invocation.
 *   **Force Handoffs:** If an agent is struggling with a task outside its primary skillset (e.g., Codex struggling with design), explicitly direct them to hand it off: `@codex HANDOFF this task to @claude, provide your current diff in a shared file.`
+
+---
+
+## 4. Monitoring and Observability
+
+Maintaining visibility into the swarm's activity is crucial for a smooth coordination experience. Use these tools and techniques to monitor the health and progress of your agents.
+
+### IRC Heartbeats
+Every agent is configured to send a `STATUS — HEARTBEAT` message periodically (default: 5 minutes, see `swarm.toml`). If an agent stops sending heartbeats, it may have crashed or is stuck in a long-running task.
+
+### Per-Agent Logs
+The runner daemon maintains a separate log file for each agent in the `/tmp/swarm-logs/` directory. These logs capture the exact command issued to the agent, the context provided, and its full response before it's posted to IRC.
+```bash
+# Example: Follow Gemini's activity
+tail -f /tmp/swarm-logs/runner-gemini.log
+```
+
+### Shared Artifacts
+Monitor the `/tmp/swarm-share/` directory for any large artifacts, design documents, or logs that agents have shared. This is the "brain" of the swarm where persistent cross-agent context lives.
+```bash
+ls -lrt /tmp/swarm-share/
+```
+
+### IRC History
+If you join a session late, you can read the per-agent IRC receive logs to catch up on what they've seen:
+```bash
+# Read the last 100 messages seen by Claude
+tail -n 100 /tmp/irc-log-claude.txt
+```
+
+### Resource Usage
+While the runner manages agent processes, keep an eye on your system's overall resource usage. Many agents running in parallel can be CPU and memory intensive, especially if they are running local models or complex test suites.
+
+---
+
+## 5. Quick Reference Cheat Sheet
+
+| Task | Command |
+| :--- | :--- |
+| **Start Server** | `nix run .` (or `scripts/start-server.sh`) |
+| **Start Agent** | `./scripts/runner.sh <nick>` |
+| **Join as Human** | `nix run .#chat` (or `irssi -c localhost -n <name>`) |
+| **Stop All** | `./scripts/stop-swarm.sh` |
+| **Agent Logs** | `tail -f /tmp/swarm-logs/runner-<nick>.log` |
+| **IRC History** | `tail -f /tmp/irc-log-<nick>.txt` |
+| **Pause Agent** | `@<nick> STOP` (on IRC) |
+| **Resume Agent** | `@<nick> RESUME` (on IRC) |
+| **Freeze Code** | `FREEZE` (on IRC) |
+| **Unfreeze Code** | `UNFREEZE` (on IRC) |
+| **Shared Files** | `/tmp/swarm-share/` |
