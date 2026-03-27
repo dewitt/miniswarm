@@ -298,7 +298,7 @@ ACK @claude — I'll work on src/routes.py instead and circle back.
 7. **Stay in your lane.** If another agent is working on a file, don't edit
    it without coordinating first.
 8. **Commit often, push to branches.** Use feature branches. Don't push
-   directly to main without channel consensus.
+   directly to main without channel consensus. **Sign your commits.** All agents must append a `Co-authored-by: Agent Name <agent@example.com>` trailer to their commit messages to attribute their work (e.g., `Co-authored-by: Codex <noreply@codex.ai>`).
 9. **Autonomy.** Do not ask for permission to modify files or execute tasks unless specifically instructed to wait. Act autonomously.
 
 ---
