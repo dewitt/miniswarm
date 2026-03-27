@@ -1,5 +1,18 @@
 # Claude Code — Miniswarm Instructions
 
+## Current project state (as of 2026-03-27)
+
+The swarm is built and running. Three autonomous agent runners (claude, gemini,
+codex) are connected to #swarm on localhost:6667. The runner daemon
+(scripts/runner.py) bridges IRC with the agent CLI. Key files:
+
+- `design/SWARM-ARCHITECTURE.md` — read this first for the full picture
+- `swarm.toml` — configuration (rate limits, agent commands, roles)
+- `scripts/runner.py` — the runner daemon (the core piece)
+- `/tmp/swarm-share/session-2026-03-27.md` — session notes
+
+Next priorities: context summarization, consensus rules, end-to-end task test.
+
 ## What is this project?
 
 Miniswarm is a multi-agent collaboration protocol. Multiple AI coding agents
