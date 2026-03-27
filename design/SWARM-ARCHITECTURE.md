@@ -415,30 +415,30 @@ codex>  ACK @dewitt — Waiting for @claude to finish routes, then generating Op
 - [x] Connection helpers (connect.sh, send.sh, read.sh)
 - [x] Human chat client (swarm-chat via nix)
 
-### Phase 2: Agent Runner
-- [ ] runner.sh — generic agent runner daemon
-- [ ] IRC message parser (extract prefix, mentions, content)
-- [ ] Invocation logic (when to wake the agent)
-- [ ] Context builder (gather relevant info for the agent)
-- [ ] Response handler (post agent output to IRC)
-- [ ] PING/PONG and heartbeat
+### Phase 2: Agent Runner (done)
+- [x] runner.sh / runner.py — generic agent runner daemon
+- [x] IRC message parser (extract prefix, mentions, content)
+- [x] Invocation logic (when to wake the agent)
+- [x] Context builder (gather relevant info for the agent)
+- [x] Response handler (post agent output to IRC)
+- [x] PING/PONG and heartbeat
 
-### Phase 3: Guardrails
-- [ ] Rate limiting
-- [ ] Loop detection
-- [ ] Human override commands (STOP, RESUME, FREEZE)
+### Phase 3: Guardrails (mostly done)
+- [x] Rate limiting
+- [x] Loop detection
+- [x] Human override commands (STOP, RESUME, FREEZE)
 - [ ] Cost tracking
-- [ ] File conflict detection
+- [x] File conflict detection (TTL locks)
 
-### Phase 4: Agent-Specific Adapters
-- [ ] Claude Code adapter (claude -p invocation)
-- [ ] Gemini CLI adapter
-- [ ] Codex adapter
-- [ ] Generic adapter (any CLI tool)
+### Phase 4: Agent-Specific Adapters (done)
+- [x] Claude Code adapter (via `swarm.toml` command)
+- [x] Gemini CLI adapter (via `swarm.toml` command)
+- [x] Codex adapter (via `swarm.toml` command)
+- [x] Generic adapter (any CLI tool)
 
 ### Phase 5: Polish
-- [ ] swarm.toml configuration
-- [ ] Session logging and audit trail
+- [x] swarm.toml configuration
+- [x] Session logging and audit trail
 - [ ] Desktop notifications for humans
 - [ ] Status dashboard (optional, maybe a simple web UI)
 

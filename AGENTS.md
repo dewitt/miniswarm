@@ -124,67 +124,17 @@ docker run -d -p 6667:6667 --name swarm-irc inspircd/inspircd-docker
 
 ## 4. Connecting as an Agent
 
-You are an AI agent with access to a shell. Use **any** of these methods to
-connect and stay connected:
+**IMPORTANT:** Agents do not manually connect to IRC in Miniswarm.
 
-### Method A: Nix helper (recommended if Nix is available)
+You are invoked by a stateless background daemon (`scripts/runner.py`) that maintains a persistent IRC connection for you. 
 
-```bash
-# From the project root — connects, registers, joins #swarm, handles PINGs
-nix run '.#connect' -- $NICK
+- The runner listens to `#swarm` on your behalf.
+- When an action is required, the runner invokes your CLI and provides the relevant IRC conversation context via your prompt.
+- You perform whatever tool calls are necessary.
+- You output your response as plain text to standard output.
+- The runner captures your output and posts it back to the IRC channel.
 
-# Or if already in `nix develop`:
-swarm-connect $NICK
-```
-
-Messages go to `/tmp/irc-fifo-$NICK` (send) and `/tmp/irc-log-$NICK.txt` (receive),
-same as the manual methods below.
-
-### Method B: Background netcat session (simplest, no dependencies)
-
-```bash
-# Create a named pipe for sending messages
-mkfifo /tmp/irc-fifo-$NICK 2>/dev/null
-
-# Connect in background, log to file
-tail -f /tmp/irc-fifo-$NICK | nc localhost 6667 > /tmp/irc-log-$NICK.txt &
-IRC_PID=$!
-
-# Register
-echo "NICK $NICK" > /tmp/irc-fifo-$NICK
-echo "USER $NICK 0 * :$NICK agent" > /tmp/irc-fifo-$NICK
-sleep 1
-echo "JOIN #swarm" > /tmp/irc-fifo-$NICK
-
-# Send a message (use this pattern throughout your session)
-echo "PRIVMSG #swarm :Hello from $NICK!" > /tmp/irc-fifo-$NICK
-
-# Read recent messages
-tail -20 /tmp/irc-log-$NICK.txt
-```
-
-### Method C: ii (irc it) — filesystem-based IRC client
-
-```bash
-brew install ii   # or build from source — it's ~500 lines of C
-ii -s localhost -p 6667 -n $NICK &
-echo "/j #swarm" > ~/irc/localhost/in
-# Messages appear as plain text files in ~/irc/localhost/#swarm/out
-# Send by writing to ~/irc/localhost/#swarm/in
-```
-
-### Method D: Custom script
-
-Any approach that lets you send/receive IRC messages works. The protocol is
-just TCP text lines ending in `\r\n`.
-
-### Staying Connected
-
-- **Keep your connection alive** for the duration of your work session.
-- Respond to server `PING` messages with `PONG` to avoid disconnection:
-  If you see `PING :something`, reply `PONG :something`.
-- Check `/tmp/irc-log-$NICK.txt` periodically (every few tool calls) to see
-  if anyone has messaged you or the channel.
+Do not attempt to use `netcat`, `ii`, or custom scripts to connect to IRC. Do not try to read from `/tmp/irc-log-*.txt`. Focus entirely on the task provided in your prompt context.
 
 ---
 
@@ -318,12 +268,10 @@ ACK @claude — I'll work on src/routes.py instead and circle back.
 
 ## 8. Behavioral Rules for Agents
 
-1. **Check IRC regularly.** After every few tool calls, read your IRC log
-   for new messages. Don't go dark for long stretches.
+1. **Use Context.** Use the IRC context provided in your prompt by the runner to understand the current state. There is no need to manually read IRC logs.
 2. **Announce before major changes.** If you're about to rebase, force push,
    or restructure directories, `WARN` the channel first.
-3. **Respond to @mentions.** If someone @mentions you, acknowledge within
-   a reasonable number of tool calls.
+3. **Respond to @mentions.** If someone @mentions you, acknowledge it in your response output.
 4. **Don't flood.** Keep messages concise. Use the shared workspace for
    large content.
 5. **Respect handoffs.** If work is handed to you, `ACK` it and follow through.
@@ -380,15 +328,11 @@ agents will understand either way.
 If you are an AI coding agent and you've just been started in this project:
 
 1. **Read this file** (`AGENTS.md`) — you're doing that now.
-2. **Check if the IRC server is running:** `nc -z localhost 6667`
-3. **If it's not running**, tell your human operator:
-   "The swarm IRC server isn't running. Please start it (see AGENTS.md Section 3)."
-4. **Connect** using the method from Section 4.
-5. **Say HELLO** with what you plan to work on.
-6. **Read the last 50 lines of channel history** (if your client supports it)
-   or check `/tmp/swarm-share/` for context.
-7. **Check for any HANDOFF or QUESTION directed at you.**
-8. **Start working**, and keep the channel updated.
+2. **Understand the Architecture:** You are being executed by `scripts/runner.py`. You do not need to manually connect to IRC.
+3. **Review Context:** Read the IRC context passed in your system prompt by the runner.
+4. **Identify Tasks:** Check for any `HANDOFF`, `QUESTION`, or `TASK` directed at you in the recent channel history.
+5. **Execute:** Perform the requested work using your available tools.
+6. **Reply:** Output your concise response as plain text. The runner will capture it and post it back to `#swarm`.
 
 ---
 

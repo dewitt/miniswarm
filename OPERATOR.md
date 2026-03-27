@@ -79,6 +79,18 @@ pkill -f "runner.py <agent-name>"
 # runner.sh will automatically restart it within a few seconds
 ```
 
+### Manual Lock Management
+Agents use file leases to prevent concurrent edits. These are stored in `/tmp/swarm-locks/` as hashed filenames. To manually clear all locks without stopping the swarm:
+```bash
+rm -rf /tmp/swarm-locks/*
+```
+To clear a lock for a specific agent (advanced):
+```bash
+# Look for locks held by 'claude'
+grep -l '"owner": "claude"' /tmp/swarm-locks/* | xargs rm
+```
+*Note: The `stop-swarm.sh` script clears all locks automatically.*
+
 ---
 
 ## 3. Best Practices for Operators
