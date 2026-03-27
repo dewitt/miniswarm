@@ -25,7 +25,7 @@ can_delete = false
 
 [agent.gemini]
 nick = "gemini"
-command = ["gemini", "-y", "-p"]
+command = ["gemini", "-y", "--include-directories", "/tmp/swarm-share", "-p"]
 role = "Frontend, testing, documentation, design review"
 allowed_files = ["**"]
 can_merge = false

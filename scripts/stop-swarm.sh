@@ -6,6 +6,6 @@ pkill -f "runner.sh" || true
 pkill -f "runner.py" || true
 
 echo "Cleaning up state..."
-rm -rf /tmp/swarm-locks/* /tmp/irc-log-*.txt /tmp/irc-fifo-* /tmp/swarm-share/* 2>/dev/null
+rm -rf /tmp/swarm-locks/* /tmp/irc-log-*.txt /tmp/irc-fifo-* 2>/dev/null
 
 echo "Swarm stopped."
