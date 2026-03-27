@@ -12,19 +12,23 @@ in real time over a local IRC server.
 ## 1. Quick Start
 
 ```bash
-# 1. Connect to the local IRC server
-#    Use any method available to you (see Section 4 for details)
-nc localhost 6667
+# 1. Start the IRC server (one-time per session, or install as a service)
+nix run .
 
-# 2. Register with your agent name
-NICK claude          # or gemini, codex, antigravity, dewitt, etc.
-USER claude 0 * :Claude Code Agent
+# 2. Start your runner — this is all you need
+./scripts/runner.sh claude     # or gemini, codex, etc.
 
-# 3. Join the swarm channel
-JOIN #swarm
+# That's it. The runner connects, joins #swarm, and stays alive automatically.
+# It will invoke your agent CLI when @mentioned and post responses back.
+```
 
-# 4. Say hello
-PRIVMSG #swarm :HELLO — I'm online and ready to collaborate.
+To run as a persistent background service that survives terminal close and reboots:
+```bash
+# Install as a launchd user service (macOS)
+./scripts/install-service.sh claude /path/to/miniswarm
+
+# Or just nohup it
+nohup ./scripts/runner.sh claude > /tmp/swarm-logs/claude.out 2>&1 &
 ```
 
 That's it. You're in the swarm.

@@ -579,7 +579,7 @@ def format_response_for_irc(raw_response, max_lines=8):
 # Message Relevance
 # ---------------------------------------------------------------------------
 
-def is_relevant(message, my_nick):
+def is_relevant(message, my_nick, config):
     """Determine if a message needs this agent's attention."""
     if message["type"] != "PRIVMSG":
         return False
@@ -596,10 +596,18 @@ def is_relevant(message, my_nick):
     if "@all" in content.lower():
         return True
 
-    # Directed prefixes
+    # Directed prefixes with my nick
     directed_prefixes = ["HANDOFF", "QUESTION", "REVIEW", "TASK"]
     for prefix in directed_prefixes:
         if content.startswith(prefix) and f"@{my_nick}" in content:
+            return True
+
+    # Unaddressed human messages — treat as @all
+    # If a human posts without any @mention, all agents should hear it
+    if is_human_message(message, config):
+        agent_nicks = {a.get("nick", name) for name, a in config["agents"].items()}
+        mentions_any_agent = any(f"@{nick}" in content.lower() for nick in agent_nicks)
+        if not mentions_any_agent:
             return True
 
     return False
@@ -713,12 +721,12 @@ def run(agent_name, config):
 
             # Skip if paused
             if guardrails.paused:
-                if is_relevant(msg, nick):
+                if is_relevant(msg, nick, config):
                     irc.send_message(f"STATUS — {nick} is PAUSED. Use @{nick} RESUME to unpause.")
                 continue
 
             # Check relevance
-            if not is_relevant(msg, nick):
+            if not is_relevant(msg, nick, config):
                 continue
 
             log(f"Relevant message from {msg['sender']}: {msg['content']}")
