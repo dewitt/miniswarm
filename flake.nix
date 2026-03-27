@@ -18,10 +18,13 @@
               Info = Miniswarm IRC Server
               Listen = 127.0.0.1
               Ports = 6667
+
+          [Limits]
               MaxConnections = 50
               MaxNickLength = 30
-              ServerUID = nobody
-              ServerGID = nobody
+
+          [Options]
+              PAM = no
 
           [Channel]
               Name = #swarm
@@ -92,7 +95,7 @@
 
         # Human-friendly IRC client, pre-configured for #swarm
         swarm-chat = pkgs.writeShellScriptBin "swarm-chat" ''
-          NICK="''${1:-human}"
+          NICK="''${1:-$USER}"
           HOST="''${2:-localhost}"
           PORT="''${3:-6667}"
           exec ${pkgs.irssi}/bin/irssi -c "$HOST" -p "$PORT" -n "$NICK"

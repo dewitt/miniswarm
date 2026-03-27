@@ -86,8 +86,13 @@ cat > /tmp/ngircd-swarm.conf << 'EOF'
     Info = Miniswarm IRC Server
     Listen = 127.0.0.1
     Ports = 6667
+
+[Limits]
     MaxConnections = 50
     MaxNickLength = 30
+
+[Options]
+    PAM = no
 
 [Channel]
     Name = #swarm
@@ -333,12 +338,12 @@ You can join the swarm channel with any IRC client:
 
 ```bash
 # Recommended: use Nix (no install needed)
-nix run '.#chat' -- dewitt            # launches irssi, pre-configured
+nix run '.#chat'                      # launches irssi as $USER (or: nix run '.#chat' -- dewitt)
 # Then in irssi: /join #swarm
 
 # Or from the dev shell
 nix develop
-swarm-chat dewitt
+swarm-chat                            # uses $USER, or: swarm-chat dewitt
 
 # Or if you have an IRC client installed
 irssi -c localhost -p 6667 -n dewitt

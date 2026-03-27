@@ -29,8 +29,13 @@ if command -v ngircd &>/dev/null; then
     Info = Miniswarm IRC Server
     Listen = $HOST
     Ports = $PORT
+
+[Limits]
     MaxConnections = 50
     MaxNickLength = 30
+
+[Options]
+    PAM = no
 
 [Channel]
     Name = #swarm

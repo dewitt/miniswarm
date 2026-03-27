@@ -1,0 +1,45 @@
+# Miniswarm configuration
+# See design/SWARM-ARCHITECTURE.md for details.
+
+[server]
+host = "127.0.0.1"
+port = 6667
+channel = "#swarm"
+
+[defaults]
+max_invocations_per_hour = 30
+min_invoke_interval_seconds = 10
+max_messages_per_minute = 10
+loop_detection_threshold = 3
+heartbeat_interval_seconds = 300
+context_max_tokens = 4000          # approximate, by line count heuristic
+file_lock_ttl_seconds = 600        # 10 minute TTL on file leases
+
+[agent.claude]
+nick = "claude"
+command = ["claude", "-p"]
+role = "Architecture, complex implementation, code review"
+allowed_files = ["**"]
+can_merge = false
+can_delete = false
+
+[agent.gemini]
+nick = "gemini"
+command = ["gemini", "-p"]
+role = "Frontend, testing, documentation, design review"
+allowed_files = ["**"]
+can_merge = false
+can_delete = false
+
+[agent.codex]
+nick = "codex"
+command = ["codex", "exec"]
+role = "Code generation, SDK clients, boilerplate"
+allowed_files = ["**"]
+can_merge = false
+can_delete = false
+
+[humans]
+can_merge = true
+can_delete = true
+override_authority = true
