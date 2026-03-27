@@ -209,6 +209,18 @@ mkdir -p /tmp/swarm-share
 Drop files there and reference them in IRC messages. This is useful for design
 docs, large diffs, or any content too big for a chat message.
 
+`/tmp/swarm-share/` is ephemeral scratch space. Canonical mutable swarm state
+lives in the repository under `state/`.
+
+### Canonical State and Locking
+
+- `state/` is the source of truth for durable swarm state.
+- `state/claims.json` is the canonical lease store for file/task claims.
+- Leases are TTL-based and the runner expires stale claims on startup and
+  before invocation.
+- IRC remains the event log (`TASK`, `CLAIM`, `DONE`, `HANDOFF`, etc.); state
+  files hold the structured data those events refer to.
+
 ---
 
 ## 7. Coordination Patterns
@@ -374,9 +386,13 @@ miniswarm/
     connect.sh          # Legacy helper (or for manual testing) to connect to IRC
     send.sh             # Legacy helper to send a message to #swarm
     read.sh             # Legacy helper to read recent channel messages
+  state/                # Git-backed canonical swarm state
+    claims.json         # TTL lease store (canonical lock state)
+    tasks.json          # Structured task ledger
+    agents/             # Per-agent structured state (optional)
+    summaries/          # Session compaction artifacts (optional)
   /tmp/swarm-share/     # Shared file workspace (created at runtime)
   /tmp/swarm-logs/      # Runner and agent invocation logs (created at runtime)
-  /tmp/swarm-locks/     # File leases for conflict prevention (created at runtime)
 ```
 
 ---

@@ -1,6 +1,7 @@
 import unittest
 import sys
 import os
+import json
 from pathlib import Path
 
 # Add scripts directory to path so we can import runner
@@ -69,26 +70,49 @@ command = ["test", "-v"]
             os.unlink(tmp_path)
 
     def test_file_locking(self):
-        import shutil
-        test_lock_dir = Path("/tmp/swarm-locks-test")
-        if test_lock_dir.exists():
-            shutil.rmtree(test_lock_dir)
-        
-        # Patch runner.LOCK_DIR
-        old_lock_dir = runner.LOCK_DIR
-        runner.LOCK_DIR = test_lock_dir
-        try:
-            self.assertTrue(runner.acquire_lock("file1", "owner1", ttl_seconds=10))
-            self.assertFalse(runner.acquire_lock("file1", "owner2", ttl_seconds=10))
-            self.assertEqual(runner.check_lock("file1"), "owner1")
-            
-            runner.release_lock("file1", "owner1")
-            self.assertIsNone(runner.check_lock("file1"))
-            self.assertTrue(runner.acquire_lock("file1", "owner2", ttl_seconds=10))
-        finally:
-            runner.LOCK_DIR = old_lock_dir
-            if test_lock_dir.exists():
-                shutil.rmtree(test_lock_dir)
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runner.bootstrap_state(tmpdir)
+            self.assertTrue(runner.acquire_lock("file1", "owner1", ttl_seconds=10, project_root=tmpdir))
+            self.assertFalse(runner.acquire_lock("file1", "owner2", ttl_seconds=10, project_root=tmpdir))
+            self.assertEqual(runner.check_lock("file1", project_root=tmpdir), "owner1")
+
+            runner.release_lock("file1", "owner1", project_root=tmpdir)
+            self.assertIsNone(runner.check_lock("file1", project_root=tmpdir))
+            self.assertTrue(runner.acquire_lock("file1", "owner2", ttl_seconds=10, project_root=tmpdir))
+
+    def test_state_bootstrap_schema(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runner.bootstrap_state(tmpdir)
+            state_dir = Path(tmpdir) / "state"
+            self.assertTrue((state_dir / "claims.json").exists())
+            self.assertTrue((state_dir / "tasks.json").exists())
+            self.assertTrue((state_dir / "agents").is_dir())
+            self.assertTrue((state_dir / "summaries").is_dir())
+
+    def test_expire_stale_locks(self):
+        import tempfile
+        from datetime import datetime, timedelta
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runner.bootstrap_state(tmpdir)
+            claims_path = Path(tmpdir) / "state" / "claims.json"
+            stale_claims = {
+                "schema_version": 1,
+                "updated_at": datetime.now().isoformat(),
+                "claims": [
+                    {
+                        "path": "src/a.py",
+                        "owner": "claude",
+                        "acquired": (datetime.now() - timedelta(minutes=15)).isoformat(),
+                        "expires": (datetime.now() - timedelta(minutes=5)).isoformat(),
+                    }
+                ],
+            }
+            claims_path.write_text(json.dumps(stale_claims))
+
+            self.assertEqual(runner.expire_stale_locks(project_root=tmpdir), 1)
+            self.assertIsNone(runner.check_lock("src/a.py", project_root=tmpdir))
 
     def test_guardrails_rate_limit(self):
         config = {"defaults": {"min_invoke_interval_seconds": 10, "max_invocations_per_hour": 30}}
@@ -116,6 +140,16 @@ command = ["test", "-v"]
         is_loop, reason = gr.check_loop(messages, "gemini")
         self.assertTrue(is_loop)
         self.assertIn("loop detected", reason)
+
+    def test_context_drift_resilience(self):
+        agent_config = {"nick": "gemini", "role": "Tester"}
+        trigger = {"type": "PRIVMSG", "sender": "dewitt", "content": "fix this", "raw": "1"}
+        recent = [{"type": "PRIVMSG", "sender": "user", "content": f"msg {i}", "raw": str(i)} for i in range(20)]
+        context = runner.build_context(agent_config, recent, trigger, ".")
+        self.assertIn("msg 19", context)
+        self.assertNotIn("msg 0", context)
+        self.assertNotIn("msg 4", context)
+        self.assertIn("msg 5", context)
 
 class TestIsRelevantEdgeCases(unittest.TestCase):
     def _config(self, my_nick="claude"):

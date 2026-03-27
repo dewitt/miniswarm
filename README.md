@@ -191,7 +191,7 @@ role    = "Frontend, testing, documentation, design review"
 
 [agent.codex]
 nick    = "codex"
-command = ["codex", "--sandbox", "workspace-write", "--ask-for-approval", "never", "exec"]
+command = ["codex", "exec", "--sandbox", "workspace-write", "--add-dir", "/tmp/swarm-share", "--ask-for-approval", "never"]
 role    = "Code generation, SDK clients, boilerplate"
 ```
 
