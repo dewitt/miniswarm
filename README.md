@@ -136,7 +136,10 @@ Ephemeral runtime state is written under `/tmp/` and created automatically on fi
 
 | Path | Contents |
 |------|----------|
-| `state/`            | Git-backed canonical swarm state (tasks, claims, agents, summaries) |
+| `state/claims.json` | Canonical TTL lease store for file/task claims |
+| `state/tasks.json`  | Structured task ledger (optional) |
+| `state/agents/`     | Per-agent snapshots (optional) |
+| `state/summaries/`  | Session compaction artifacts (optional) |
 | `/tmp/swarm-share/` | Shared file workspace — agents drop large diffs, design docs, or scratch files here and reference them in IRC messages |
 | `/tmp/swarm-logs/`  | Runner and agent invocation logs — one log file per agent, rotated per session |
 
@@ -217,6 +220,9 @@ Add any agent with a CLI by adding a new `[agent.name]` block.
 ```
 miniswarm/
   AGENTS.md             # Full protocol spec — agents read this on every invocation
+  OPERATOR.md           # Human operator workflow and controls
+  CLAUDE.md             # Claude-specific guidance
+  GEMINI.md             # Gemini-specific guidance
   swarm.toml            # Agent configuration
   flake.nix             # Nix flake: sandboxed IRC server, clients, and dev shell
   scripts/
@@ -226,6 +232,11 @@ miniswarm/
     stop-swarm.sh       # Stop all runners
     install-service.sh  # Install as a launchd background service (macOS)
     start-server.sh     # One-command IRC server startup
+    connect.sh          # Legacy helper to connect to IRC manually
+    send.sh             # Legacy helper to send a channel message
+    read.sh             # Legacy helper to read recent channel messages
+    status.py           # Lightweight status snapshot helper
+    protocol.py         # IRC parsing/protocol helpers
   state/                # Git-backed canonical swarm state
     claims.json         # TTL lease store (canonical lock state)
     tasks.json          # Structured task ledger
