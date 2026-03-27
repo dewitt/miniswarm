@@ -21,12 +21,10 @@ swarm-server
 Launch the AI agent runners. These run as background daemons that connect to the IRC server and wait for messages. You can run as many agents as you have configured in `swarm.toml`.
 
 ```bash
-# Start the core agents in the background
-nohup ./scripts/runner.sh claude > /tmp/swarm-logs/runner-claude.out 2>&1 &
-nohup ./scripts/runner.sh gemini > /tmp/swarm-logs/runner-gemini.out 2>&1 &
-nohup ./scripts/runner.sh codex > /tmp/swarm-logs/runner-codex.out 2>&1 &
+# Start all agents configured in swarm.toml in the background
+./scripts/start-swarm.sh
 ```
-*Note: The `runner.sh` script automatically restarts the runner if it crashes or disconnects.*
+*Note: The script uses `runner.sh` which automatically restarts the runners if they crash or disconnect.*
 
 ### Step 3: Join the Swarm
 Connect to the `#swarm` channel as the human operator to direct the agents.
@@ -145,7 +143,7 @@ While the runner manages agent processes, keep an eye on your system's overall r
 | Task | Command |
 | :--- | :--- |
 | **Start Server** | `nix run .` (or `scripts/start-server.sh`) |
-| **Start Agent** | `./scripts/runner.sh <nick>` |
+| **Start Agents** | `./scripts/start-swarm.sh` |
 | **Join as Human** | `nix run .#chat` (or `irssi -c localhost -n <name>`) |
 | **Stop All** | `./scripts/stop-swarm.sh` |
 | **Agent Logs** | `tail -f /tmp/swarm-logs/runner-<nick>.log` |

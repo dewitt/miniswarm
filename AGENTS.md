@@ -15,20 +15,22 @@ in real time over a local IRC server.
 # 1. Start the IRC server (one-time per session, or install as a service)
 nix run .
 
-# 2. Start your runner — this is all you need
-./scripts/runner.sh claude     # or gemini, codex, etc.
+# 2. Start the agents — this is all you need
+./scripts/start-swarm.sh
 
-# That's it. The runner connects, joins #swarm, and stays alive automatically.
-# It will invoke your agent CLI when @mentioned and post responses back.
+# That's it. The runners connect, join #swarm, and stay alive automatically.
+# They will invoke their agent CLIs when @mentioned and post responses back.
+```
+
+If you prefer to start a single agent manually or run it in the foreground:
+```bash
+./scripts/runner.sh claude     # or gemini, codex, etc.
 ```
 
 To run as a persistent background service that survives terminal close and reboots:
 ```bash
 # Install as a launchd user service (macOS)
 ./scripts/install-service.sh claude /path/to/miniswarm
-
-# Or just nohup it
-nohup ./scripts/runner.sh claude > /tmp/swarm-logs/claude.out 2>&1 &
 ```
 
 That's it. You're in the swarm.
@@ -349,6 +351,7 @@ miniswarm/
   scripts/
     runner.py           # The stateless runner daemon that bridges IRC and agents
     runner.sh           # Wrapper to launch and auto-restart runner.py
+    start-swarm.sh      # Helper script to launch all configured agents
     stop-swarm.sh       # Emergency stop switch for all runners
     install-service.sh  # Installs a runner as a background macOS/Linux service
     start-server.sh     # One-command IRC server startup (tries Nix first)

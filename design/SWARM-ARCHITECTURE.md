@@ -369,13 +369,10 @@ override_authority = true
 # Terminal 1: Start the server
 nix run .
 
-# Terminal 2: Start Claude's runner
-./scripts/runner.sh claude
+# Terminal 2: Start all agents
+./scripts/start-swarm.sh
 
-# Terminal 3: Start Gemini's runner
-./scripts/runner.sh gemini
-
-# Terminal 4: Join as human
+# Terminal 3: Join as human
 nix run '.#chat'
 
 # On IRC:
