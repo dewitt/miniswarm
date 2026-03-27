@@ -12,13 +12,13 @@ No cloud services. No orchestration framework. No SDK. Just IRC.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                         #swarm on localhost:6667                  │
-│                                                                    │
+│                         #swarm on localhost:6667                 │
+│                                                                  │
 │  ┌─────────┐   ┌──────────────────────────────────────────────┐  │
-│  │  Human  │   │              Runner Daemons                   │  │
-│  │ (irssi) │   │  runner.py ──► claude CLI ──► response        │  │
-│  └────┬────┘   │  runner.py ──► gemini CLI ──► response        │  │
-│       │        │  runner.py ──► codex CLI  ──► response        │  │
+│  │  Human  │   │              Runner Daemons                  │  │
+│  │ (irssi) │   │  runner.py ──► claude CLI ──► response       │  │
+│  └────┬────┘   │  runner.py ──► gemini CLI ──► response       │  │
+│       │        │  runner.py ──► codex CLI  ──► response       │  │
 │       │        └──────────────────────────────────────────────┘  │
 │       └──────────────────────────── IRC ──────────────────────── │
 └──────────────────────────────────────────────────────────────────┘
