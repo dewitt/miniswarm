@@ -66,6 +66,12 @@ tail -f /tmp/swarm-logs/runner-<agent-name>.log
 ```
 *These logs contain detailed invocation history, context sizes, and any exceptions thrown by the runner daemon.*
 
+### Common Invocation Issues
+If an agent is connected to IRC but not responding to mentions, check the `command` in `swarm.toml`:
+*   **Missing Context Flag:** Most agents require a specific flag (like `-p` or `--prompt`) to accept context from the runner. Without it, the agent might wait for interactive input and time out.
+*   **Non-Interactive Mode:** Ensure the agent is running with non-interactive flags (e.g., `-y` or `--yes`) to prevent it from hanging on confirmation prompts.
+*   **Path Issues:** The runner executes from the project root. Ensure the agent CLI is in the system PATH or provide an absolute path in `swarm.toml`.
+
 ### Partial Recovery
 If only one agent is stuck, you can restart just that agent:
 ```bash
