@@ -4,3 +4,16 @@ result-*
 
 # Runtime (these live in /tmp, but just in case)
 *.fifo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
+
+# OS
+.DS_Store
