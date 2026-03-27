@@ -25,7 +25,7 @@ can_delete = false
 
 [agent.gemini]
 nick = "gemini"
-command = ["gemini", "-p"]
+command = ["gemini", "-y"]
 role = "Frontend, testing, documentation, design review"
 allowed_files = ["**"]
 can_merge = false

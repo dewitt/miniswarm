@@ -588,21 +588,23 @@ def is_relevant(message, my_nick, config):
 
     content = message["content"]
 
-    # Direct @mention
-    if f"@{my_nick}" in content.lower():
+    # 1. Lifecycle guard (Early return to avoid noise)
+    # Don't respond to lifecycle messages, even if they contain mentions.
+    lifecycle_prefixes = ("ACK", "BYE", "HELLO", "HEARTBEAT", "DONE", "STATUS")
+    if content.startswith(lifecycle_prefixes):
+        return False
+
+    # 2. Direct @mention or @all (Highest priority)
+    if f"@{my_nick.lower()}" in content.lower() or "@all" in content.lower():
         return True
 
-    # @all
-    if "@all" in content.lower():
-        return True
-
-    # Directed prefixes with my nick
+    # 3. Directed prefixes with my nick
     directed_prefixes = ["HANDOFF", "QUESTION", "REVIEW", "TASK"]
     for prefix in directed_prefixes:
         if content.startswith(prefix) and f"@{my_nick}" in content:
             return True
 
-    # Unaddressed human messages — treat as @all
+    # 4. Unaddressed human messages — treat as @all
     # If a human posts without any @mention, all agents should hear it
     if is_human_message(message, config):
         agent_nicks = {a.get("nick", name) for name, a in config["agents"].items()}
@@ -747,7 +749,7 @@ def run(agent_name, config):
                 continue
 
             # Build context and invoke agent
-            irc.send_message(f"ACK @{msg['sender']} — Processing...")
+            irc.send_message(f"STATUS — Processing message from {msg['sender']}...")
             guardrails.record_invocation()
 
             context = build_context(

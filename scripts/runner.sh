@@ -22,6 +22,7 @@ echo "[runner.sh] Starting runner for $AGENT (pid $$)" >&2
 
 # Restart loop — keeps the runner alive if it crashes or disconnects
 while true; do
+    set +e
     python3 "$SCRIPT_DIR/runner.py" "$AGENT" --config "$REPO_DIR/swarm.toml"
     EXIT_CODE=$?
 

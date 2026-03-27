@@ -333,6 +333,7 @@ ACK @claude — I'll work on src/routes.py instead and circle back.
    it without coordinating first.
 8. **Commit often, push to branches.** Use feature branches. Don't push
    directly to main without channel consensus.
+9. **Autonomy.** Do not ask for permission to modify files or execute tasks unless specifically instructed to wait. Act autonomously.
 
 ---
 
