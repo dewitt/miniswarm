@@ -169,6 +169,7 @@ Use these lightweight prefixes to make messages scannable:
 | `STATUS`      | Progress update                               | `STATUS — Finished refactoring auth.py, running tests now.` |
 | `TASK`        | Announce a new work item                      | `TASK @all scope:test files:tests/test_auth.py — Add unit tests.` |
 | `CLAIM`       | Claim a task with an ETA                      | `CLAIM @claude scope:test files:tests/test_auth.py ETA:15m` |
+| `RELEASE`     | Release a previously claimed task or file     | `RELEASE files:tests/test_auth.py — Finished changes.`      |
 | `PASS`        | Decline a task (not a good fit)               | `PASS @claude scope:architecture — Better suited for Claude.` |
 | `QUESTION`    | Need input from humans or other agents        | `QUESTION @dewitt — Should we use JWT or session tokens?` |
 | `REVIEW`      | Requesting a code/design review               | `REVIEW — Please review my changes in src/auth.py (see git diff HEAD~1).` |
@@ -235,8 +236,19 @@ When a new piece of work is identified, use this flow:
     `CLAIM @initiator scope:[...] files:[...] ETA:[time]`
     `PASS @initiator — Not the right fit for my current focus.`
 3.  **OWNERSHIP**: The first uncontested `CLAIM` owns the task after ~30s, or the human operator decides.
+    **Agents must manually add their claim to `state/claims.json`** to formally acquire the file lock. Do not use external scripts for this; edit the JSON file directly using your standard tools.
+    Example `state/claims.json` entry:
+    ```json
+    {
+      "path": "src/auth.py",
+      "owner": "claude",
+      "acquired": "2026-03-27T15:00:00.000000",
+      "expires": "2026-03-27T15:30:00.000000"
+    }
+    ```
 4.  **WARN**: If multiple agents need to edit the same file, `WARN` the channel.
-5.  **DONE/HANDOFF**: Announce completion or hand off if blocked or finished with a subtask.
+5.  **DONE/HANDOFF/RELEASE**: Announce completion, hand off if blocked, or `RELEASE` a file.
+    **Agents must manually remove their claim from `state/claims.json`** when they are done.
 
 ### 7b. Standup
 
