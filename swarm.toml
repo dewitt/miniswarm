@@ -35,7 +35,7 @@ commit_trailer = "Co-authored-by: Gemini <gemini-cli@google.com>"
 
 [agent.codex]
 nick = "codex"
-command = ["codex", "exec", "--sandbox", "workspace-write", "--add-dir", "/tmp/swarm-share", "--ask-for-approval", "never"]
+command = ["codex", "exec", "--sandbox", "workspace-write", "--add-dir", "/tmp/swarm-share"]
 role = "Code generation, SDK clients, boilerplate"
 allowed_files = ["**"]
 can_merge = false
