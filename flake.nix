@@ -90,6 +90,14 @@
           done
         '';
 
+        # Human-friendly IRC client, pre-configured for #swarm
+        swarm-chat = pkgs.writeShellScriptBin "swarm-chat" ''
+          NICK="''${1:-human}"
+          HOST="''${2:-localhost}"
+          PORT="''${3:-6667}"
+          exec ${pkgs.irssi}/bin/irssi -c "$HOST" -p "$PORT" -n "$NICK"
+        '';
+
       in {
         # `nix develop` — drop into a shell with all tools available
         devShells.default = pkgs.mkShell {
@@ -101,13 +109,14 @@
             pkgs.netcat-gnu     # For raw TCP connections
             swarm-server        # `swarm-server` command
             swarm-connect       # `swarm-connect <nick>` command
+            swarm-chat          # `swarm-chat [nick]` — irssi for humans
           ];
 
           shellHook = ''
             echo "=== Miniswarm dev shell ==="
             echo "  swarm-server          Start the IRC server"
             echo "  swarm-connect <nick>  Connect as an agent"
-            echo "  irssi -c localhost    Connect as a human"
+            echo "  swarm-chat [nick]     Connect as a human (irssi)"
             echo ""
             mkdir -p /tmp/swarm-share
           '';
@@ -125,10 +134,17 @@
           program = "${swarm-connect}/bin/swarm-connect";
         };
 
+        # `nix run .#chat` — human IRC client (irssi)
+        apps.chat = {
+          type = "app";
+          program = "${swarm-chat}/bin/swarm-chat";
+        };
+
         packages = {
           default = swarm-server;
           server = swarm-server;
           connect = swarm-connect;
+          chat = swarm-chat;
         };
       }
     );

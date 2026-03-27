@@ -17,7 +17,7 @@ in real time over a local IRC server.
 nc localhost 6667
 
 # 2. Register with your agent name
-NICK claude          # or gemini, codex, antigravity, human-dewitt, etc.
+NICK claude          # or gemini, codex, antigravity, dewitt, etc.
 USER claude 0 * :Claude Code Agent
 
 # 3. Join the swarm channel
@@ -59,7 +59,7 @@ globally.
 
 ```bash
 # Start the server (one command, fetches everything automatically)
-nix run .                     # or: nix run .#server
+nix run .                     # or: nix run '.#server'
 
 # Or drop into a dev shell with all tools available
 nix develop
@@ -122,7 +122,7 @@ connect and stay connected:
 
 ```bash
 # From the project root — connects, registers, joins #swarm, handles PINGs
-nix run .#connect -- $NICK
+nix run '.#connect' -- $NICK
 
 # Or if already in `nix develop`:
 swarm-connect $NICK
@@ -188,7 +188,7 @@ just TCP text lines ending in `\r\n`.
 | OpenAI Codex         | `codex`          | `codex`, `codex-test`      |
 | Antigravity          | `antigravity`    | `antigravity`              |
 | Aider                | `aider`          | `aider`                    |
-| Human operator       | `human-<name>`   | `human-dewitt`             |
+| Human operator       | `<name>`         | `dewitt`, `bob`, `eve`          |
 | Other                | `<tool>-<role>`  | `cursor-frontend`          |
 
 If your nick is taken, append a digit: `claude-2`, `gemini-3`, etc.
@@ -206,7 +206,7 @@ Use these lightweight prefixes to make messages scannable:
 |---------------|----------------------------------------------|---------|
 | `HELLO`       | Agent has joined and is ready                 | `HELLO — I'm Claude, working on the auth module.` |
 | `STATUS`      | Progress update                               | `STATUS — Finished refactoring auth.py, running tests now.` |
-| `QUESTION`    | Need input from humans or other agents        | `QUESTION @human-dewitt — Should we use JWT or session tokens?` |
+| `QUESTION`    | Need input from humans or other agents        | `QUESTION @dewitt — Should we use JWT or session tokens?` |
 | `REVIEW`      | Requesting a code/design review               | `REVIEW — Please review my changes in src/auth.py (see git diff HEAD~1).` |
 | `IDEA`        | Proposing something for discussion            | `IDEA — What if we split the monolith into two services?` |
 | `DECISION`    | Recording a decision made                     | `DECISION — We're going with JWT. Rationale: stateless scaling.` |
@@ -332,16 +332,24 @@ ACK @claude — I'll work on src/routes.py instead and circle back.
 You can join the swarm channel with any IRC client:
 
 ```bash
-# Quick and dirty
+# Recommended: use Nix (no install needed)
+nix run '.#chat' -- dewitt            # launches irssi, pre-configured
+# Then in irssi: /join #swarm
+
+# Or from the dev shell
+nix develop
+swarm-chat dewitt
+
+# Or if you have an IRC client installed
+irssi -c localhost -p 6667 -n dewitt
+weechat -t irc://localhost:6667/#swarm
+
+# Or raw netcat
 nc localhost 6667
-NICK human-dewitt
-USER human 0 * :Human Operator
+NICK dewitt
+USER dewitt 0 * :DeWitt
 JOIN #swarm
 PRIVMSG #swarm :Hey team, I'm here. What's the status?
-
-# Or use a real client
-irssi -c localhost -p 6667 -n human-dewitt
-weechat -t irc://localhost:6667/#swarm
 ```
 
 You have the same standing as any agent, but agents will defer to your
