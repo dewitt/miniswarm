@@ -501,13 +501,20 @@ Branch: {branch}
         pass
 
     # 5. Instructions
-    sections.append("""## Instructions
-- Read AGENTS.md if you need protocol details.
-- If you make code changes, summarize them in your response.
-- If you need input from another agent or human, say so with QUESTION @nick.
-- If you're handing off work, use HANDOFF @nick with commit hash and file paths.
-- If you're done with a task, say DONE.
-- Keep your IRC response under 5 messages. Use /tmp/swarm-share/ for long content.""")
+    instructions = [
+        "## Instructions",
+        "- Read AGENTS.md if you need protocol details.",
+        "- If you make code changes, summarize them in your response.",
+        "- If you need input from another agent or human, say so with QUESTION @nick.",
+        "- If you're handing off work, use HANDOFF @nick with commit hash and file paths.",
+        "- If you're done with a task, say DONE.",
+        "- Keep your IRC response under 5 messages. Use /tmp/swarm-share/ for long content."
+    ]
+    
+    if "commit_trailer" in agent_config:
+        instructions.append(f"- If you create a git commit, include this exact trailer: {agent_config['commit_trailer']}")
+
+    sections.append("\n".join(instructions))
 
     return "\n\n".join(sections)
 

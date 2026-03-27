@@ -22,6 +22,7 @@ role = "Architecture, complex implementation, code review"
 allowed_files = ["**"]
 can_merge = false
 can_delete = false
+commit_trailer = "Co-authored-by: Claude <claude@anthropic.com>"
 
 [agent.gemini]
 nick = "gemini"
@@ -30,6 +31,7 @@ role = "Frontend, testing, documentation, design review"
 allowed_files = ["**"]
 can_merge = false
 can_delete = false
+commit_trailer = "Co-authored-by: Gemini <gemini-cli@google.com>"
 
 [agent.codex]
 nick = "codex"
@@ -38,6 +40,7 @@ role = "Code generation, SDK clients, boilerplate"
 allowed_files = ["**"]
 can_merge = false
 can_delete = false
+commit_trailer = "Co-authored-by: Codex <codex@openai.com>"
 
 [humans]
 can_merge = true
