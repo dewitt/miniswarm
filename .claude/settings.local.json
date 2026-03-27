@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(nix:*)",
+      "Bash(chmod:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(/tmp/swarm-share/session-2026-03-27.md:*)",
+      "Write(*)",
+      "Edit(*)",
+      "Replace(*)"
+    ]
+  }
+}
