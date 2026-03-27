@@ -221,7 +221,7 @@ miniswarm/
     runner.sh           # Wrapper with auto-restart
     start-swarm.sh      # Launch all configured agents
     stop-swarm.sh       # Stop all runners
-    install-service.sh  # Install as a launchd/systemd background service
+    install-service.sh  # Install as a launchd background service (macOS only)
     start-server.sh     # One-command IRC server startup
   /tmp/swarm-share/     # Shared file workspace (created at runtime)
   /tmp/swarm-logs/      # Runner and agent logs (created at runtime)
