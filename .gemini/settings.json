@@ -1,0 +1,8 @@
+{
+  "context": {
+    "fileFiltering": {
+      "enableRecursiveFileSearch": false,
+      "enableFuzzySearch": false
+    }
+  }
+}

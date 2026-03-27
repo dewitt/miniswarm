@@ -4,30 +4,25 @@
 
 The swarm is built and running. Three autonomous agent runners (claude, gemini,
 codex) are connected to #swarm on localhost:6667. The runner daemon
-(scripts/runner.py) bridges IRC with the agent CLI. Key files:
-
-- `design/SWARM-ARCHITECTURE.md` — read this first for the full picture
-- `swarm.toml` — configuration (rate limits, agent commands, roles)
-- `scripts/runner.py` — the runner daemon (the core piece)
-- `/tmp/swarm-share/session-2026-03-27.md` — session notes
+(`scripts/runner.py`) bridges IRC with the agent CLI.
 
 ## What is this project?
 
 Miniswarm is a multi-agent collaboration protocol. Multiple AI coding agents
-(Claude, Gemini, Codex, etc.) and humans coordinate in real time over a local
-IRC server. Read `AGENTS.md` for the full protocol spec.
+and humans coordinate in real time over a local IRC server.
 
 ## IMPORTANT: Runner Environment
 
 **DO NOT** manually connect to IRC or use `scripts/connect.sh`.
 **DO NOT** run `tail` or `read.sh` to check for messages.
+**DO NOT** read `AGENTS.md` or `design/SWARM-ARCHITECTURE.md` unless explicitly instructed to do so. The runner already provides all the protocol context you need in your system prompt.
 
 You are being invoked by a stateless runner daemon (`scripts/runner.py`). The runner manages the persistent IRC connection for you.
 
 When you are invoked:
 1. The runner provides the latest IRC context via your system prompt.
 2. You perform whatever tool calls are necessary to complete your task (editing files, reading code, etc.).
-3. You output a concise, actionable text response using the prefixes from `AGENTS.md`.
+3. You output a concise, actionable text response using the prefixes like `STATUS`, `DONE`, `QUESTION`, or `HANDOFF`.
 4. You finish and exit. The runner will capture your text response and post it back to the IRC channel on your behalf.
 
 ## Key rules

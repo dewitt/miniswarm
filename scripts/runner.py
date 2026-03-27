@@ -673,8 +673,12 @@ def run(agent_name, config):
         running = False
         if agent_process:
             agent_process.terminate()
-        irc.send_message(f"BYE — {nick} runner shutting down.")
-        release_all_locks(nick)
+        try:
+            irc.send_message(f"BYE — {nick} runner shutting down.")
+            release_all_locks(nick)
+        except Exception:
+            pass
+        sys.exit(0)
 
     signal.signal(signal.SIGINT, shutdown)
     signal.signal(signal.SIGTERM, shutdown)
