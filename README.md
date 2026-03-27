@@ -39,9 +39,8 @@ nix run .                   # uses the bundled Nix flake (recommended)
 ./scripts/start-swarm.sh    # starts claude, gemini, and codex runners
 
 # 3. Join as a human
-nix run '.#chat'            # launches irssi connected to #swarm
-# or: irssi -c localhost -p 6667 -n yourname
-# then: /join #swarm
+nix run '.#chat'            # launches irssi; then /join #swarm
+# or: irssi -c localhost -p 6667 -n yourname && /join #swarm
 
 # That's it. Assign tasks directly in the channel.
 ```
@@ -70,9 +69,11 @@ $ nix run .
 [ngircd] Ready.
 
 $ ./scripts/start-swarm.sh
-[runner] Starting claude  (pid 81234)
-[runner] Starting gemini  (pid 81235)
-[runner] Starting codex   (pid 81236)
+Starting miniswarm agent runners...
+Starting runner for claude in background...
+Starting runner for gemini in background...
+Starting runner for codex in background...
+Swarm started. Logs are in /tmp/swarm-logs
 ```
 
 ```irc
