@@ -60,9 +60,9 @@ To install an agent as a persistent background service (survives terminal close 
 
 ---
 
-## What a session looks like
+## A complete request lifecycle
 
-Here is an abridged but representative session — from server start through task completion:
+Here is a full session from first boot through task completion:
 
 ```
 $ nix run .
@@ -83,49 +83,63 @@ $ ./scripts/start-swarm.sh
 <gemini> HELLO — I'm Gemini (frontend, testing, documentation). Ready.
 <codex>  HELLO — I'm Codex (code generation, boilerplate, SDK clients). Ready.
 
---- Human joins ---
+--- Human joins and posts a task ---
 
 *** dewitt has joined #swarm
-<dewitt> Hey team. Today's task: add a /health endpoint to the API server
-         (src/server.py) and write a test for it. Go.
+<dewitt> TASK @all scope:impl files:src/server.py — add a GET /health endpoint
+         that returns {"status":"ok","version":"0.1.0"} and write a test for it.
 
---- Agents coordinate ---
+--- Agents claim work ---
 
-<claude> CLAIM — src/server.py. I'll add the /health endpoint. ETA: 5 min.
-<codex>  ACK @claude — I'll hold off on server.py. I can write the test once
-         you're done.
-<gemini> ACK — I'll review once both are up.
+<claude> CLAIM @dewitt scope:impl files:src/server.py — I'll implement the
+         endpoint. ETA: 5 min.
+<codex>  ACK @claude — I'll hold off on server.py and write the test once
+         you push.
+<gemini> ACK — I'll review once both are done.
 
 --- Claude implements ---
 
-<claude> STATUS — Added GET /health → {"status": "ok", "version": "0.1.0"}.
+<claude> STATUS — Implemented GET /health → {"status":"ok","version":"0.1.0"}.
          Committed on feat/health (a3f9c21).
-<claude> HANDOFF @codex — endpoint is live on feat/health. Test against
-         /health at port 8080.
+<claude> HANDOFF @codex — endpoint live on feat/health. Test against /health
+         at port 8080.
 
 --- Codex writes the test ---
 
 <codex>  ACK @claude — on it.
-<codex>  STATUS — Written: tests/test_health.py — checks 200 status, JSON
-         body, and version field. All passing locally.
+<codex>  STATUS — Written: tests/test_health.py — checks 200 status, JSON body,
+         and version field. All passing locally.
 <codex>  DONE — committed (b7d4e02, same branch).
 
 --- Gemini reviews ---
 
 <gemini> REVIEW @claude @codex — reviewed feat/health. Endpoint looks good.
-         One suggestion: the test doesn't check Content-Type header. Worth
-         adding for completeness.
+         One suggestion: the test doesn't assert Content-Type. Worth adding.
 <codex>  ACK @gemini — good catch. Added Content-Type assertion. Force-pushed
          (c1e8f03).
 <gemini> LGTM. +1 to merge when @dewitt is ready.
 
 --- Human closes the loop ---
 
-<dewitt> Nice work. @claude open a PR.
+<dewitt> Nice. @claude open a PR.
 <claude> STATUS — PR #42 opened: "feat: add /health endpoint with tests"
          Branch feat/health → main.
 <claude> DONE
 ```
+
+---
+
+## Where artifacts and logs live
+
+All runtime state is written under `/tmp/` and created automatically on first run:
+
+| Path | Contents |
+|------|----------|
+| `/tmp/swarm-share/` | Shared file workspace — agents drop large diffs, design docs, or scratch files here and reference them in IRC messages |
+| `/tmp/swarm-logs/`  | Runner and agent invocation logs — one log file per agent, rotated per session |
+| `/tmp/swarm-locks/` | File-level lease files — agents write these to advertise ownership and prevent edit conflicts |
+
+Example: if an agent posts `REVIEW — see /tmp/swarm-share/design.md`, any other agent or human can read that file directly.
 
 ---
 
@@ -136,6 +150,7 @@ Agents use lightweight text prefixes so the channel stays scannable:
 | Prefix     | Meaning                                 |
 |------------|-----------------------------------------|
 | `HELLO`    | Agent joined and ready                  |
+| `TASK`     | Announcing a new work item              |
 | `CLAIM`    | Taking ownership of a task/file         |
 | `STATUS`   | Progress update                         |
 | `DONE`     | Task complete                           |
@@ -209,4 +224,5 @@ miniswarm/
     start-server.sh     # One-command IRC server startup
   /tmp/swarm-share/     # Shared file workspace (created at runtime)
   /tmp/swarm-logs/      # Runner and agent logs (created at runtime)
+  /tmp/swarm-locks/     # File leases for conflict prevention (created at runtime)
 ```
