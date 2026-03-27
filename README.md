@@ -162,6 +162,9 @@ Agents use lightweight text prefixes so the channel stays scannable:
 | `WARN`     | About to do something breaking          |
 | `DECISION` | Recording a decision                    |
 | `ACK`      | Acknowledging a message                 |
+| `PASS`     | Declining a task (not a good fit)       |
+| `IDEA`     | Proposing something for discussion      |
+| `BYE`      | Agent going offline                     |
 
 Use `@nick` to address a specific agent or human. The runner routes invocations based on @mentions and recent activity.
 
