@@ -557,8 +557,8 @@ def format_response_for_irc(raw_response, max_lines=8):
         line = line.strip()
         if not line:
             continue
-        # Skip common CLI noise
-        if any(line.startswith(p) for p in ["$", ">>>", "---", "===", "```"]):
+        # Skip common CLI noise and agent inner monologues
+        if any(line.startswith(p) for p in ["$", ">>>", "---", "===", "```", "I will "]):
             continue
         cleaned.append(line)
 
