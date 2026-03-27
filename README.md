@@ -130,15 +130,15 @@ Swarm started. Logs are in /tmp/swarm-logs
 
 ---
 
-## Where artifacts and logs live
+## Where artifacts and state live
 
-All runtime state is written under `/tmp/` and created automatically on first run:
+Ephemeral runtime state is written under `/tmp/` and created automatically on first run, while durable swarm state lives in the repository:
 
 | Path | Contents |
 |------|----------|
+| `state/`            | Git-backed canonical swarm state (tasks, claims, agents, summaries) |
 | `/tmp/swarm-share/` | Shared file workspace — agents drop large diffs, design docs, or scratch files here and reference them in IRC messages |
 | `/tmp/swarm-logs/`  | Runner and agent invocation logs — one log file per agent, rotated per session |
-| `/tmp/swarm-locks/` | File-level lease files — agents write these to advertise ownership and prevent edit conflicts |
 
 Example: if an agent posts `REVIEW — see /tmp/swarm-share/design.md`, any other agent or human can read that file directly.
 
@@ -191,7 +191,7 @@ role    = "Frontend, testing, documentation, design review"
 
 [agent.codex]
 nick    = "codex"
-command = ["codex", "exec", "--sandbox", "workspace-write", "--add-dir", "/tmp/swarm-share", "--ask-for-approval", "never"]
+command = ["codex", "exec", "--sandbox", "workspace-write", "--add-dir", "/tmp/swarm-share"]
 role    = "Code generation, SDK clients, boilerplate"
 ```
 
@@ -221,9 +221,11 @@ miniswarm/
     runner.sh           # Wrapper with auto-restart
     start-swarm.sh      # Launch all configured agents
     stop-swarm.sh       # Stop all runners
-    install-service.sh  # Install as a launchd background service (macOS only)
+    install-service.sh  # Install as a launchd background service (macOS)
     start-server.sh     # One-command IRC server startup
+  state/                # Git-backed canonical swarm state
+    claims.json         # TTL lease store (canonical lock state)
+    tasks.json          # Structured task ledger
   /tmp/swarm-share/     # Shared file workspace (created at runtime)
   /tmp/swarm-logs/      # Runner and agent logs (created at runtime)
-  /tmp/swarm-locks/     # File leases for conflict prevention (created at runtime)
 ```
