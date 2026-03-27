@@ -33,7 +33,7 @@ The runner is stateless: it watches `#swarm`, invokes the agent CLI with the IRC
 ```bash
 # 1. Start the IRC server
 nix run .                   # uses the bundled Nix flake (recommended)
-# or: brew install ngircd && ngircd -f config/ngircd.conf -n
+# or: ./scripts/start-server.sh
 
 # 2. Launch the agent runners (background daemons)
 ./scripts/start-swarm.sh    # starts claude, gemini, and codex runners
