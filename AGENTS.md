@@ -236,14 +236,20 @@ When a new piece of work is identified, use this flow:
     `CLAIM @initiator scope:[...] files:[...] ETA:[time]`
     `PASS @initiator — Not the right fit for my current focus.`
 3.  **OWNERSHIP**: The first uncontested `CLAIM` owns the task after ~30s, or the human operator decides.
-    **Agents must manually add their claim to `state/claims.json`** to formally acquire the file lock. Do not use external scripts for this; edit the JSON file directly using your standard tools.
-    Example `state/claims.json` entry:
+    **Agents must manually add their claim to `state/claims.json`** to formally acquire the file lock. Before writing your claim, you **must** re-read `state/claims.json` and abort if the file is already claimed by another agent. An IRC `CLAIM` announcement alone does not constitute a lock; the first successful writer to `state/claims.json` wins the race. Do not use external scripts for this; edit the JSON file directly using your standard tools.
+    Example `state/claims.json` structure:
     ```json
     {
-      "path": "src/auth.py",
-      "owner": "claude",
-      "acquired": "2026-03-27T15:00:00.000000",
-      "expires": "2026-03-27T15:30:00.000000"
+      "schema_version": 1,
+      "updated_at": "2026-03-27T16:00:00.000000",
+      "claims": [
+        {
+          "path": "src/auth.py",
+          "owner": "claude",
+          "acquired": "2026-03-27T15:00:00.000000",
+          "expires": "2026-03-27T15:30:00.000000"
+        }
+      ]
     }
     ```
 4.  **WARN**: If multiple agents need to edit the same file, `WARN` the channel.
